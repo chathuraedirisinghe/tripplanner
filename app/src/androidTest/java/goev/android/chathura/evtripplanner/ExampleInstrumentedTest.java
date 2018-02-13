@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("goev.android.chathura.com.jlanka.evtripplanner", appContext.getPackageName());
+        assertEquals("goev.android.chathura.com.jlanka.jltripplanner", appContext.getPackageName());
     }
 }

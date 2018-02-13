@@ -30,9 +30,37 @@
         android:backgroundTint="@color/colorPrimaryDark"
         app:floatingSearch_searchHint="Search..."
         app:floatingSearch_searchSuggestionTextSize="10dp"
-        app:floatingSearch_suggestionsListAnimDuration="250"/>
+        app:floatingSearch_suggestionsListAnimDuration="250">
+
+    </com.arlib.floatingsearchview.FloatingSearchView>
 
     <include layout="@layout/progress_bar_layout" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabLegend"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_gravity="end"
+        android:scaleType="center"
+        android:layout_marginTop="110dp"
+        android:layout_marginRight="18dp"
+        android:clickable="true"
+        app:backgroundTint="@android:color/white"
+        android:src="@drawable/help"
+        app:elevation="10dp"
+        app:fabSize="mini"/>
+
+    <ImageView
+        android:id="@+id/legendView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:paddingTop="10dp"
+        android:paddingLeft="10dp"
+        android:elevation="15dp"
+        android:background="@android:color/white"
+        app:srcCompat="@drawable/legend" />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fabRoute"

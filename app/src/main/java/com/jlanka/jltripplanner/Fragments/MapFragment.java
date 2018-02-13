@@ -131,6 +131,8 @@ public class MapFragment extends Fragment implements
 
     public static boolean isCharging,destinationSet=false;
 
+    JSONObject charger_array;
+
     String user_mobile,user_pin;
     HashMap<String, String> user;
 
@@ -663,6 +665,7 @@ public class MapFragment extends Fragment implements
             @Override
             public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
                 Log.w("Is User : ",charger_id.toString()+"      "+mqttMessage.toString());
+
                 updateItemArray(charger_id,mqttMessage.toString());
 //                System.out.println(itemArray.toString());
                 addMarkers();
@@ -674,13 +677,15 @@ public class MapFragment extends Fragment implements
         });
     }
 
-    private void updateItemArray(String charger_id, String s) throws JSONException {
+    private void updateItemArray(String charger_id, String charger_current_status) throws JSONException {
         try{
             for(int i=0; i < stations_object.length();i++){
-                JSONObject charger_array = stations_object.getJSONObject(i);
+                charger_array = stations_object.getJSONObject(i);
                 final String chargerid = charger_array.getString("device_id").toLowerCase();
-                if (chargerid.equals(charger_id)){
-                    stations_object.getJSONObject(i).put("availability",s);
+                final String charger_previous_status = charger_array.getString("availability");
+
+                if (chargerid.equals(charger_id) && (charger_previous_status!=charger_current_status)){
+                    stations_object.getJSONObject(i).put("availability",charger_current_status);
                 }
             }
         }catch (JSONException e){

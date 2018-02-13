@@ -32,8 +32,8 @@ public class LocationMonitor extends Application {
 
     private Workable<GPSPoint> workable;
 
-    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 60000;
-    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = 30000;
+    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
+    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = 5000;
 
     @Override
     public void onCreate(){

@@ -168,10 +168,12 @@ public class MapFragment extends Fragment implements
     @BindView(R.id.progress_Bar_Layout) RelativeLayout progressBar;
     @BindView(R.id.textView) TextView progress_bar_text;
     @BindString(R.string.google_maps_key) String MAP_API_KEY;
+    @BindView(R.id.fabLegend) FloatingActionButton fabLegend;
     @BindView(R.id.fabRoute) FloatingActionButton fabRoute;
     @BindView(R.id.fabNav) FloatingActionButton fabNav;
     @BindView(R.id.fabEnd) FloatingActionButton fabEnd;
     @BindView(R.id.floating_search_view) FloatingSearchView fsv;
+    @BindView(R.id.legendView) ImageView legendView;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -251,6 +253,14 @@ public class MapFragment extends Fragment implements
         //----------------------Thiwanka--------------------------------------
         GoogleAnalyticsService.getInstance().setScreenName(this.getClass().getSimpleName());
         chargers=new ArrayList<>();
+        fabLegend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getCurrentLocation();
+                showLegend();
+            }
+        });
+
         fabRoute.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -361,6 +371,7 @@ public class MapFragment extends Fragment implements
 
     @Override
     public boolean onMarkerClick(Marker marker) {
+        hideLegend();
         if (marker.getTag().equals("Charger_Marker")) {
             selectedMarker = marker.getTitle();
             selectedMarker_latLng = marker.getPosition();
@@ -444,6 +455,7 @@ public class MapFragment extends Fragment implements
             public void onMapClick(LatLng point) {
                 Log.d("Map","Map clicked");
 //                if (behavior.getState()==BottomSheetBehavior.STATE_EXPANDED) {
+                    hideLegend();
                     collapseBottomSheet();
 //                }
             }
@@ -892,6 +904,7 @@ public class MapFragment extends Fragment implements
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public void onSearchAction(String currentQuery) {
+        hideLegend();
         onSearchTextChanged(null,currentQuery);
     }
 
@@ -1674,6 +1687,16 @@ public class MapFragment extends Fragment implements
             e.printStackTrace();
         }
         return routes;
+    }
+
+    private void showLegend(){
+        fabLegend.hide();
+        legendView.setVisibility(View.VISIBLE);
+    }
+
+    private void hideLegend(){
+        fabLegend.show();
+        legendView.setVisibility(View.INVISIBLE);
     }
 
     private void expandBottomSheet(){

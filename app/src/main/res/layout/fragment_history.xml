@@ -1,0 +1,44 @@
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context="com.jlanka.evtripplanner.Fragments.HistoryFragment"
+        android:textAlignment="center"
+        android:id="@+id/lastExpensesTable">
+
+        <TableRow
+            android:layout_marginBottom="5dp"
+            android:background="@color/colorPrimaryDark"
+            android:padding="5dp">
+            <TextView
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:layout_weight="1"
+                android:text="Date" />
+            <TextView
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:layout_weight="1"
+                android:text="Duration" />
+            <TextView
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:layout_weight="1"
+                android:text="Cost" />
+            <TextView
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:layout_weight="1"
+                android:text="Charger ID" />
+        </TableRow>
+
+
+</TableLayout>

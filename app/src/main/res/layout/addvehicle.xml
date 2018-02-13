@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layout_root"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"
+    android:padding="10dp" >
+
+    <TextView
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Registration Number"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/reg_number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <requestFocus />
+    </EditText>
+
+    <TextView
+        android:id="@+id/xgdsdg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Vin"
+        android:textStyle="bold"/>
+
+    <EditText
+        android:id="@+id/vehicle_vin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="">
+    </EditText>
+
+    <TextView
+        android:id="@+id/xgdg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Model"
+        android:textStyle="bold"/>
+
+    <EditText
+        android:id="@+id/vehicle_model"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Leaf">
+    </EditText>
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Year"
+        android:textStyle="bold"/>
+
+    <EditText
+        android:id="@+id/vehicle_year"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="2015">
+    </EditText>
+
+</LinearLayout>

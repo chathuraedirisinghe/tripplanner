@@ -32,6 +32,7 @@ public class ForgotPassword extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        //progressBar = ProgressDialog.show(this, "", "Please Wait...", true);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forgot_password);
         ButterKnife.bind(this);
@@ -46,26 +47,31 @@ public class ForgotPassword extends AppCompatActivity {
         cookieManager.acceptThirdPartyCookies(_forgotWebView);
 
         final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-
-
         _forgotWebView.setWebViewClient(new WebViewClient(){
-            public void onPageFinished(WebView view, String url) {
-
+            @Override
+            public void onLoadResource(WebView view, String url) {
+                super.onLoadResource(view, url);
             }
 
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
                 _forgotWebView.reload();
+                progressBar.dismiss();
                 Toast.makeText(ForgotPassword.this, "Connection Error", Toast.LENGTH_LONG).show();
             }
         });
 
         _forgotWebView.setWebChromeClient(new WebChromeClient() {
             public void onProgressChanged(WebView view, int progress) {
+                System.out.println(progress);
                 if (progress==100) {
                     if (progressBar.isShowing()) {
                         progressBar.dismiss();
                     }
                 }
+                else if(progressBar==null)
+                    progressBar = ProgressDialog.show(ForgotPassword.this, "", "Please Wait...", true);
+                else if (!progressBar.isShowing())
+                    progressBar = ProgressDialog.show(ForgotPassword.this, "", "Please Wait...", true);
             }
         });
 

@@ -40,6 +40,7 @@ import com.android.volley.toolbox.Volley;
 import com.jlanka.jltripplanner.GoogleAnalyticsService;
 import com.jlanka.jltripplanner.R;
 import com.jlanka.jltripplanner.Server.ServerConnector;
+import com.jlanka.jltripplanner.UserActivity.ForgotPassword;
 import com.jlanka.jltripplanner.UserActivity.SessionManager;
 
 import org.json.JSONException;
@@ -100,7 +101,6 @@ public class PaymentFragment extends Fragment {
         _btn_proceed.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                pd = ProgressDialog.show(getActivity(), "", "Please Wait...", true);
 //                buyCredits(user_name,user_title,user_credit,user_mobile);
                 _credit_amount.setEnabled(false);
                 _btn_proceed.setEnabled(false);
@@ -114,7 +114,7 @@ public class PaymentFragment extends Fragment {
                     String url = "https://www.goev.lk/pay/au.com.gateway.IT/pay-mob.php";
                     final String credit_amount = _credit_amount.getText().toString();
                     String postData = null;
-                    String fullname = user_fname+" "+user_lname;
+                    String fullname = user_fname + " " + user_lname;
                     try {
                         postData = "mobNo=" + URLEncoder.encode(user_mobile, "UTF-8")
                                 + "&noOfCredit=" + URLEncoder.encode("10", "UTF-8")
@@ -123,7 +123,7 @@ public class PaymentFragment extends Fragment {
                                 + "&credit=" + URLEncoder.encode(user_credit, "UTF-8");
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
-                        GoogleAnalyticsService.getInstance().trackException(getActivity().getApplicationContext(),e);
+                        GoogleAnalyticsService.getInstance().trackException(getActivity().getApplicationContext(), e);
                     }
                     _payment_header.setVisibility(View.GONE);
                     _btn_proceed.setVisibility(View.GONE);
@@ -132,32 +132,7 @@ public class PaymentFragment extends Fragment {
 
                     // Force links and redirects to open in the WebView instead of in a browser
                     String finalPostData = postData;
-                    mWebView.setWebViewClient(new WebViewClient(){
-                        @Override
-                        public void onLoadResource(WebView view, String url){
-                            System.out.println(url);
-                            if (url.equals("https://sampath.paycorp.com.au/webinterface/app/payment")) {
-                                pd = ProgressDialog.show(getActivity(), "", "Please Wait...", true);
-                                Handler handler = new Handler();
-                                handler.postDelayed(new Runnable(){
-                                    @Override
-                                    public void run(){
-                                        if (pd != null && pd.isShowing()) {
-                                            pd.dismiss();
-                                        }
-                                    }
-                                }, 10000);
-                            }
-                        }
-
-                        @Override
-                        public void onPageFinished(WebView view,String url){
-                            System.out.println("onPageFinished");
-                            if (pd != null && pd.isShowing()) {
-                                pd.dismiss();
-                            }
-                        }
-
+                    mWebView.setWebViewClient(new WebViewClient() {
                         @RequiresApi(api = Build.VERSION_CODES.M)
                         @Override
                         public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
@@ -174,20 +149,23 @@ public class PaymentFragment extends Fragment {
                             });
 
                             dlgAlert.setCancelable(false);
-                            android.app.AlertDialog ad=dlgAlert.create();
+                            android.app.AlertDialog ad = dlgAlert.create();
                             ad.show();
                             dlgAlert.setIcon(R.drawable.logo);
                         }
                     });
                     mWebView.postUrl(url, postData.getBytes());
 
-                    mWebView.setWebChromeClient(new WebChromeClient(){
+                    mWebView.setWebChromeClient(new WebChromeClient() {
                         public void onProgressChanged(WebView view, int progress) {
-                            if (progress==100) {
+                            if (progress == 100) {
                                 if (pd.isShowing()) {
                                     pd.dismiss();
                                 }
-                            }
+                            } else if (pd == null)
+                                pd = ProgressDialog.show(getActivity(), "", "Please Wait...", true);
+                            else if (!pd.isShowing())
+                                pd = ProgressDialog.show(getActivity(), "", "Please Wait...", true);
                         }
 
                         public boolean onConsoleMessage(ConsoleMessage cmsg)

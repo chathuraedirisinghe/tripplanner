@@ -99,6 +99,7 @@ import com.jlanka.jltripplanner.UserActivity.SessionManager;
 import pl.droidsonroids.gif.GifImageView;
 import static android.content.ContentValues.TAG;
 
+@RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
 public class MapFragment extends Fragment implements
         OnMapReadyCallback,
         FloatingSearchView.OnSearchListener,
@@ -578,6 +579,7 @@ public class MapFragment extends Fragment implements
         serverConnector.sendRequest();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
     public void addMarkers(){
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -637,6 +639,7 @@ public class MapFragment extends Fragment implements
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
     public void startMqtt(final String charger_id) {
         MQTTHelper mqttHelper2 = new MQTTHelper(getActivity(),"tcp://development.enetlk.com:1887");
         mqttHelper2.subscriptionTopic=("server/"+charger_id+"/status");
@@ -884,7 +887,6 @@ public class MapFragment extends Fragment implements
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public void onSearchAction(String currentQuery) {
-        hideLegend();
         onSearchTextChanged(null,currentQuery);
     }
 
@@ -892,6 +894,7 @@ public class MapFragment extends Fragment implements
     @Override
     public void onSearchTextChanged(String oldQuery,String newQuery) {
         getCurrentLocation();
+        hideLegend();
         if (mLastLocation!=null)
             getAddressSuggestions(newQuery);
         else

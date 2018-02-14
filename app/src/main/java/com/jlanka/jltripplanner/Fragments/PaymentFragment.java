@@ -106,7 +106,6 @@ public class PaymentFragment extends Fragment {
                 _btn_proceed.setEnabled(false);
 
                 if (!validate()) {
-                    pd.dismiss();
                     _credit_amount.setEnabled(true);
                     _btn_proceed.setEnabled(true);
                     return;
@@ -117,7 +116,7 @@ public class PaymentFragment extends Fragment {
                     String fullname = user_fname + " " + user_lname;
                     try {
                         postData = "mobNo=" + URLEncoder.encode(user_mobile, "UTF-8")
-                                + "&noOfCredit=" + URLEncoder.encode("10", "UTF-8")
+                                + "&noOfCredit=" + URLEncoder.encode(credit_amount, "UTF-8")
                                 + "&title=" + URLEncoder.encode("", "UTF-8")
                                 + "&FName=" + URLEncoder.encode(fullname, "UTF-8")
                                 + "&credit=" + URLEncoder.encode(user_credit, "UTF-8");
@@ -247,7 +246,7 @@ public class PaymentFragment extends Fragment {
     private boolean validate() {
         boolean valid = true;
         String credit_amount = _credit_amount.getText().toString();
-        if (credit_amount.isEmpty() || Integer.valueOf(credit_amount)<49 ) {
+        if (credit_amount.isEmpty() || Integer.valueOf(credit_amount)<50 ) {
             _credit_amount.setError("The minimum amount is Rs. 50");
             GoogleAnalyticsService.getInstance().setAction("Payment","Preferred Amount",credit_amount);
             valid = false;

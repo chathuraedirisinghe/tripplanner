@@ -44,7 +44,7 @@
             <EditText android:id="@+id/input_fname"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textCapWords"
+                android:digits="@string/letters_only"
                 android:hint="First Name" />
         </android.support.design.widget.TextInputLayout>
 
@@ -56,7 +56,7 @@
             <EditText android:id="@+id/input_lname"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textCapWords"
+                android:digits="@string/letters_only"
                 android:hint="Last Name" />
         </android.support.design.widget.TextInputLayout>
 

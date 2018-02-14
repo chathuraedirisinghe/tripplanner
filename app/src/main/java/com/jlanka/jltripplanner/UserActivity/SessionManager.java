@@ -77,7 +77,6 @@ public class SessionManager {
      * Create login session
      * */
     public void createLoginSession(String id, String username, String password, String fname, String lname, String email, String mob, String credits, JSONArray vehicle){
-
         // Storing login value as TRUE
         editor.putBoolean(IS_LOGIN, true);
         editor.putString(user_id, id);

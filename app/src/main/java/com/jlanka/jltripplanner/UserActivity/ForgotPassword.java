@@ -32,7 +32,6 @@ public class ForgotPassword extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        //progressBar = ProgressDialog.show(this, "", "Please Wait...", true);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forgot_password);
         ButterKnife.bind(this);

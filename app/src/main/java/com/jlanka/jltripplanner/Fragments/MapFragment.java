@@ -153,7 +153,6 @@ public class MapFragment extends Fragment implements
     private ArrayList<Circle> circles;
     private ArrayList<Polyline> routeLines;
     private ArrayList<Marker> infoMarkers,chargers;
-    private ViewGroup container;
 
     //------------------------------------------------------------------------------------------------------------
 

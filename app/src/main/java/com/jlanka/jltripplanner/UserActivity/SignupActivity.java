@@ -17,6 +17,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import com.jlanka.jltripplanner.R;
@@ -256,14 +259,14 @@ public class SignupActivity extends Activity {
         }
 
         if (first_name.isEmpty()) {
-            _fname.setError("First Name cannot be empty.");
-            valid = false;
+            _fname.setError("First Name cannot be empty. And only letters allowed");
+            valid=false;
         } else {
             _fname.setError(null);
         }
 
         if (last_name.isEmpty()) {
-            _lname.setError("Last Name cannot be empty.");
+            _fname.setError("First Name cannot be empty. And only letters allowed");
             valid = false;
         } else {
             _lname.setError(null);
@@ -284,7 +287,7 @@ public class SignupActivity extends Activity {
         }
 
         if (user_password.isEmpty() || user_password.length()<4 || user_password.length()>6) {
-            _passwordText.setError("Pin length should be 4 - 6.");
+            _passwordText.setError("Pin length should be 4 - 6 digits.");
             valid = false;
         } else {
             _passwordText.setError(null);

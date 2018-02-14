@@ -2,6 +2,7 @@ package com.jlanka.jltripplanner.Fragments;
 
 import android.app.AlertDialog;
 import android.app.Fragment;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
@@ -44,7 +45,7 @@ public class SettingsFragment extends Fragment {
     private EditText et_old_password,et_new_password;
     private TextView tv_message;
     private AlertDialog dialog;
-    private ProgressBar progress;
+    ProgressDialog pd;
 
     View mView;
 
@@ -88,22 +89,21 @@ public class SettingsFragment extends Fragment {
         user_lname = user.get(SessionManager.user_lname);
         user_title = user.get(SessionManager.user_title);
         user_mobile = user.get(SessionManager.user_mobile);
-        user_passwd = user.get(SessionManager.user_pin);
+        user_passwd = user.get(SessionManager.pass_word);
 
         tv_name.setText(user_fname+" "+user_lname);
         tv_mobile.setText(user_mobile);
 
+        System.out.println(user_fname);
     }
 
     private void showDialog() {
-
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         LayoutInflater inflater = getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.dialog_change_password, null);
         et_old_password = (EditText) view.findViewById(R.id.et_old_password);
         et_new_password = (EditText) view.findViewById(R.id.et_new_password);
         tv_message = (TextView) view.findViewById(R.id.tv_message);
-        progress = (ProgressBar) view.findViewById(R.id.progress);
         builder.setView(view);
         builder.setTitle("Change PIN");
         builder.setPositiveButton("Change PIN", new DialogInterface.OnClickListener() {
@@ -126,34 +126,41 @@ public class SettingsFragment extends Fragment {
             public void onClick(View v) {
                 String old_password = et_old_password.getText().toString();
                 String new_password = et_new_password.getText().toString();
-                if ((!old_password.isEmpty() && !new_password.isEmpty()) && (old_password.equals(user_passwd))) {
-                    progress.setVisibility(View.VISIBLE);
-                    changePasswordProcess(user_mobile, old_password, new_password);
+                System.out.println(old_password+","+new_password+","+user_passwd);
 
-                } else if(old_password.isEmpty() && new_password.isEmpty()) {
+                if(!old_password.isEmpty() || !new_password.isEmpty()) {
+                    if (new_password.length() > 3 && new_password.length() < 7) {
+                        if (!old_password.equals(user_passwd)) {
+                            tv_message.setVisibility(View.VISIBLE);
+                            tv_message.setText("Current PIN is Wrong");
+                        }
+                        else {
+                            changePasswordProcess(user_mobile, old_password, new_password);
+                        }
+                    }
+                    else{
+                        tv_message.setVisibility(View.VISIBLE);
+                        tv_message.setText("PIN length should greater than 4 - 6 digit");
+                    }
+                }
+                else{
                     tv_message.setVisibility(View.VISIBLE);
-                    tv_message.setText("Fields are empty");
-                }else if(!old_password.equals(user_passwd)){
-                    tv_message.setVisibility(View.VISIBLE);
-                    tv_message.setText("Current PIN is Wrong");
-                }else if(new_password.length()<4){
-                    tv_message.setVisibility(View.VISIBLE);
-                    tv_message.setText("PIN length should greater than 4 digit");
+                    tv_message.setText("All Fields are required");
                 }
             }
         });
     }
 
     private void changePasswordProcess(final String user_mobile, final String old_password, final String new_password) {
-
+        pd = ProgressDialog.show(getActivity(), "", "Please Wait...", true);
         RequestQueue rq = Volley.newRequestQueue(getActivity());
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, ServerConnector.SERVER_ADDRESS,
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, ServerConnector.SERVER_ADDRESS+"reset_password/",
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
                         System.out.println("Server Respond : "+response);
                         if (response.contains("1")) {
-                            progress.setVisibility(View.GONE);
+                            pd.dismiss();
                             tv_message.setVisibility(View.GONE);
                             dialog.dismiss();
                             Snackbar.make(getView(), "PIN Changed Successfully.", Snackbar.LENGTH_LONG).show();
@@ -170,7 +177,7 @@ public class SettingsFragment extends Fragment {
                                     .setIcon(android.R.drawable.ic_dialog_alert)
                                     .show();
                         } else {
-                            progress.setVisibility(View.GONE);
+                            pd.dismiss();
                             tv_message.setVisibility(View.VISIBLE);
                             tv_message.setText("Unable to Change PIN.");
                         }
@@ -179,7 +186,7 @@ public class SettingsFragment extends Fragment {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        progress.setVisibility(View.GONE);
+                        pd.dismiss();
                         tv_message.setVisibility(View.VISIBLE);
                         tv_message.setText(error.getLocalizedMessage());
                     }

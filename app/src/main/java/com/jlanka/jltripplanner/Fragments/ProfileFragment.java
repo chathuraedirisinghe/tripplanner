@@ -265,6 +265,8 @@ public class ProfileFragment extends Fragment {
                 Log.w("User Details : ", String.valueOf(response));
                 try{
                     JSONObject VehicleDetails = new JSONObject(response);
+                    JSONArray vehicles = VehicleDetails.getJSONArray("electric_vehicles");
+                    session.setVehicles(vehicles);
                     GoogleAnalyticsService.getInstance().setAction("Vehicle","Add Vehicle",modal+year+"");
 
                 } catch (JSONException e) {

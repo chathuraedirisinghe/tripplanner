@@ -2,6 +2,8 @@ package com.jlanka.jltripplanner.Fragments;
 
 
 import android.app.AlertDialog;
+import android.app.FragmentManager;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -17,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 
 import com.android.volley.Request;
 
@@ -52,6 +55,8 @@ public class VehicleFragment extends Fragment {
     SessionManager session;
     String user_id;
 
+    FragmentManager fragmentManager;
+
     ImageButton addVehicleButton;
     Button done;
 
@@ -69,6 +74,7 @@ public class VehicleFragment extends Fragment {
         ButterKnife.bind(this,mView);
 
         session = new SessionManager(getActivity());
+        fragmentManager  = getFragmentManager();
         //This will redirect user to LoginActivity is he is not logged in
         // get user data from session
         HashMap<String, String> user = session.getUserDetails();
@@ -110,7 +116,7 @@ public class VehicleFragment extends Fragment {
                                         String v_model = String.valueOf(model.getText());
                                         String v_year = String.valueOf(year.getText());
                                         sendData(new Vehicle(user_id,v_reg,v_in,v_model,v_year));
-                                        vehicleAdapter.addVehicle(new Vehicle(user_id,v_reg,v_in,v_model,v_year));
+
                                     }
                                 })
                         .setNegativeButton("Cancel",
@@ -135,18 +141,18 @@ public class VehicleFragment extends Fragment {
     }
 
     private void getDetails(String user_id) {
+        ProgressDialog pd = ProgressDialog.show(getActivity(), "", "Please Wait...", true);
         ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+"ev_owners/"+user_id+"/",null,Request.Method.GET,getActivity());
         serverConnector.setOnReponseListner(new OnResponseListner() {
             @Override
             public void onResponse(String response) {
                 Log.w("User Details : ", String.valueOf(response));
                 try{
+                    pd.dismiss();
                     JSONObject user_data = new JSONObject(response);
                     JSONArray vehicles = user_data.getJSONArray("electric_vehicles");
-
                     session.setVehicles(vehicles);
-                    Intent i = new Intent(getActivity(), MainActivity.class);
-                    startActivity(i);
+                    fragmentManager.beginTransaction().replace(R.id.content_frame,new MapFragment()).commit();
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -179,6 +185,15 @@ public class VehicleFragment extends Fragment {
                 Log.w("User Details : ", String.valueOf(response));
                 try{
                     JSONObject user_data = new JSONObject(response);
+                    String err  = user_data.getString("reg_no");
+                    if(err.contains("already exists")){
+                    }else{
+                        String reg_no = user_data.getString("reg_no");
+                        String vin = user_data.getString("vin");
+                        String model = user_data.getString("model");
+                        String year = user_data.getString("year");
+                        vehicleAdapter.addVehicle(new Vehicle(user_id,reg_no,vin,model,year));
+                    }
                     GoogleAnalyticsService.getInstance().setAction("Vehicle","Add Vehicle",modal+year+"");
 
                 } catch (JSONException e) {

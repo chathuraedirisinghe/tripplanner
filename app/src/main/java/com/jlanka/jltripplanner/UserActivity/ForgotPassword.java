@@ -11,8 +11,10 @@ import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,8 +35,6 @@ public class ForgotPassword extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forgot_password);
         ButterKnife.bind(this);
-
-        progressBar = ProgressDialog.show(ForgotPassword.this, "Loading", "Please wait...");
         _forgotWebView.loadUrl("http://yvk.rxn.mybluehost.me:8000/reset_password/");
         _forgotWebView.clearCache(true);
         _forgotWebView.clearHistory();
@@ -49,15 +49,8 @@ public class ForgotPassword extends AppCompatActivity {
 
 
         _forgotWebView.setWebViewClient(new WebViewClient(){
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url);
-                return true;
-            }
-
             public void onPageFinished(WebView view, String url) {
-                if (progressBar.isShowing()) {
-                    progressBar.dismiss();
-                }
+
             }
 
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
@@ -65,6 +58,17 @@ public class ForgotPassword extends AppCompatActivity {
                 Toast.makeText(ForgotPassword.this, "Connection Error", Toast.LENGTH_LONG).show();
             }
         });
+
+        _forgotWebView.setWebChromeClient(new WebChromeClient() {
+            public void onProgressChanged(WebView view, int progress) {
+                if (progress==100) {
+                    if (progressBar.isShowing()) {
+                        progressBar.dismiss();
+                    }
+                }
+            }
+        });
+
         _loginLink.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

@@ -182,14 +182,17 @@ public class PaymentFragment extends Fragment {
                     mWebView.postUrl(url, postData.getBytes());
 
                     mWebView.setWebChromeClient(new WebChromeClient(){
+                        public void onProgressChanged(WebView view, int progress) {
+                            if (progress==100) {
+                                if (pd.isShowing()) {
+                                    pd.dismiss();
+                                }
+                            }
+                        }
+
                         public boolean onConsoleMessage(ConsoleMessage cmsg)
                         {
                             try {
-                                System.out.println(cmsg.message());
-                                if (pd != null && pd.isShowing()) {
-                                    pd.dismiss();
-                                }
-
                                 if (cmsg.message().startsWith("Raw response")) {
                                     JSONObject obj = new JSONObject(cmsg.message().replace("Raw response :  ", ""));
                                     JSONObject responseData = obj.getJSONObject("responseData");
@@ -309,4 +312,5 @@ public class PaymentFragment extends Fragment {
         rq.add(stringRequest);
     }
 }
+
 

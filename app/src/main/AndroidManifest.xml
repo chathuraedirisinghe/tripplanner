@@ -18,11 +18,11 @@
 
     <application
         android:persistent="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:name="com.jlanka.jltripplanner.GoogleAnalyticsService"
         android:allowBackup="true"
-        android:icon="@drawable/logo"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/logo_launcher"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
@@ -43,6 +43,10 @@
         <activity
             android:name="com.jlanka.jltripplanner.UserActivity.LoginActivity"
             android:label="@string/title_activity_login"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="com.jlanka.jltripplanner.Animators.DialogActivity"
+            android:label="DialogActivity"
             android:screenOrientation="portrait" />
         <activity
             android:name="com.jlanka.jltripplanner.UserActivity.SignupActivity"

@@ -22,12 +22,15 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.transition.ArcMotion;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AnimationUtils;
+import android.view.animation.Interpolator;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -75,6 +78,7 @@ import java.util.Map;
 import butterknife.BindString;
 import butterknife.BindView;
 import butterknife.ButterKnife;
+
 import com.jlanka.jltripplanner.DataLoader;
 import com.jlanka.jltripplanner.GeofenceMonitor;
 import com.jlanka.jltripplanner.GoogleAnalyticsService;
@@ -146,6 +150,7 @@ public class MapFragment extends Fragment implements
     private ArrayList<Circle> circles;
     private ArrayList<Polyline> routeLines;
     private ArrayList<Marker> infoMarkers,chargers;
+    private ViewGroup container;
 
     //------------------------------------------------------------------------------------------------------------
 
@@ -182,6 +187,8 @@ public class MapFragment extends Fragment implements
         ButterKnife.bind(this,mView);
 
         getCurrentLocation();
+        container = (ViewGroup) getActivity().findViewById(R.id.cordinator_layout);
+
 
         bottomSheet = mView.findViewById(R.id.design_bottom_sheet);
         behavior = BottomSheetBehavior.from(bottomSheet);
@@ -388,36 +395,41 @@ public class MapFragment extends Fragment implements
                     }
                 }
 
-                if (charger_available.equals("Busy")) {
-                    _chargenow_btn.setEnabled(false);
+                switch (charger_available){
+                    case "Available":
+                        _charger_icon.setImageBitmap(getMarkerIcon(charger_type, "Available"));
+                        break;
+                    case "Busy":
+                        _chargenow_btn.setEnabled(false);
+                        _charger_icon.setImageBitmap(getMarkerIcon(charger_type,"Busy" ));
+                        break;
+                    case "NA":
+                        _chargenow_btn.setEnabled(false);
+                        _charger_icon.setImageBitmap(getMarkerIcon(charger_type,"NA" ));
+                        break;
                 }
+
+                if (isCharging) {
+                    setCharging();
+                }
+
+                collapseBottomSheet();
+                if (behavior.getState() == BottomSheetBehavior.STATE_COLLAPSED) {
+                    expandBottomSheet();
+                }
+                _charger_id.setText(marker.getTitle());
+
+                if (charger_type.equals("AC"))
+                    _charger_type.setText("Standard");
+                else
+                    _charger_type.setText("Rapid");
+//        _charger_address.setText("Address : "+charger_address);
+                _charger_availability.setText(" " + charger_available);
 
             } catch (JSONException e) {
                 trackError(e);
                 e.printStackTrace();
             }
-
-            if (isCharging) {
-                setCharging();
-            }
-
-            collapseBottomSheet();
-            if (behavior.getState() == BottomSheetBehavior.STATE_COLLAPSED) {
-                expandBottomSheet();
-            }
-            _charger_id.setText(marker.getTitle());
-            _charger_type.setText(" " + charger_type);
-//        _charger_address.setText("Address : "+charger_address);
-            _charger_availability.setText(" " + charger_available);
-
-            boolean t;
-            if (charger_available.equals("Available"))
-                t=true;
-            else
-                t=false;
-            _charger_icon.setImageBitmap(getMarkerIcon(charger_type,t ));
-
-            Log.w("Clicked  :  ", marker.getTitle());
         }
         return false;
     }
@@ -575,55 +587,18 @@ public class MapFragment extends Fragment implements
                     ArrayList<Marker> markers = new ArrayList<>();
                     for (int i = 0; i < stations_object.length(); i++) {
                         JSONObject charger = stations_object.getJSONObject(i);
-                        if (charger.getString("charger_type").equals("AC")) { //green Charger
-                            if (charger.getString("availability").equals("Available")) {
-                                chargerMarker = mGoogleMap.addMarker(new MarkerOptions()
-                                        .title(charger.getString("device_id"))
-                                        .snippet(charger.getString("location"))
-                                        .icon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon("AC", true)))
-                                        .position(new LatLng(
-                                                charger.getDouble("lat"),
-                                                charger.getDouble("lng")
-                                        ))
-                                );
-                            } else if (charger.getString("availability").equals("busy")) {
-                                chargerMarker = mGoogleMap.addMarker(new MarkerOptions()
-                                        .title(charger.getString("device_id"))
-                                        .snippet(charger.getString("location"))
-                                        .icon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon("AC", false)))
-                                        .position(new LatLng(
-                                                charger.getDouble("lat"),
-                                                charger.getDouble("lng")
-                                        ))
-                                );
-                            } else if (charger.getString("charger_type").equals("NA")) {
-                                System.out.println(charger.getString("device_id") + "    Not Available");
-                            }
-                        } else if (charger.getString("charger_type").equals("DC")) {
-                            if (charger.getString("availability").equals("Available")) {
-                                chargerMarker = mGoogleMap.addMarker(new MarkerOptions()
-                                        .title(charger.getString("device_id"))
-                                        .snippet(charger.getString("location"))
-                                        .icon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon("DC", true)))
-                                        .position(new LatLng(
-                                                charger.getDouble("lat"),
-                                                charger.getDouble("lng")
-                                        ))
-                                );
-                            } else if (charger.getString("charger_type").equals("busy")) {
-                                chargerMarker = mGoogleMap.addMarker(new MarkerOptions()
-                                        .title(charger.getString("device_id"))
-                                        .snippet(charger.getString("location"))
-                                        .icon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon("DC", false)))
-                                        .position(new LatLng(
-                                                charger.getDouble("lat"),
-                                                charger.getDouble("lng")
-                                        ))
-                                );
-                            } else {
-                                System.out.println(charger.getString("device_id") + "    Not Available");
-                            }
-                        }
+                        System.out.println("Charger Status : "+charger.getString("availability")+" , Charger Type : "+charger.getString("charger_type"));
+
+                        chargerMarker = mGoogleMap.addMarker(new MarkerOptions()
+                                .title(charger.getString("device_id"))
+                                .snippet(charger.getString("location"))
+                                .icon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon(charger.getString("charger_type").toString(),
+                                        charger.getString("availability").toString())))
+                                .position(new LatLng(
+                                        charger.getDouble("lat"),
+                                        charger.getDouble("lng")
+                                ))
+                        );
                         //---------------------------Thiwanka----------------------------
                         chargerMarker.setTag("Charger_Marker");
                         markers.add(chargerMarker);
@@ -1619,19 +1594,33 @@ public class MapFragment extends Fragment implements
         startActivity(intent);
     }
 
-    private Bitmap getMarkerIcon(String type,boolean status){
-        Bitmap image;
+    private Bitmap getMarkerIcon(String type,String status){
+        Bitmap image=null;
         if (type.equals("AC") ){
-            if (status)
-                image=(resizeMapIcons("l2a",100,120));
-            else
-                image=(resizeMapIcons("l2b",100,120));
+            switch (status){
+                case "Available":
+                    image=(resizeMapIcons("l2a",100,120));
+                    break;
+                case "Busy":
+                    image=(resizeMapIcons("l2b",100,120));
+                    break;
+                case "NA":
+                    image=(resizeMapIcons("l2u",100,120));
+                    break;
+            }
         }
         else {
-            if (status)
-                image=(resizeMapIcons("dcfa",100,120));
-            else
-                image=(resizeMapIcons("dcfb",100,120));
+            switch (status){
+                case "Available":
+                    image=(resizeMapIcons("dcfa",100,120));
+                    break;
+                case "Busy":
+                    image=(resizeMapIcons("dcfb",100,120));
+                    break;
+                case "NA":
+                    image=(resizeMapIcons("dcfu",100,120));
+                    break;
+            }
         }
         return image;
     }

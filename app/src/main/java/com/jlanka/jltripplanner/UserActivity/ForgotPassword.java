@@ -2,10 +2,15 @@ package com.jlanka.jltripplanner.UserActivity;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
+import android.webkit.ValueCallback;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.TextView;
@@ -22,6 +27,7 @@ public class ForgotPassword extends AppCompatActivity {
     @BindView(R.id.link_toLogin) TextView _loginLink;
     private ProgressDialog progressBar;
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,17 +40,21 @@ public class ForgotPassword extends AppCompatActivity {
         _forgotWebView.clearHistory();
         _forgotWebView.getSettings().setJavaScriptEnabled(true);
         _forgotWebView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+
+        CookieSyncManager.createInstance(this);
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.acceptThirdPartyCookies(_forgotWebView);
+
         final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+
 
         _forgotWebView.setWebViewClient(new WebViewClient(){
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                Log.i("WebView", "Processing webview url click...");
                 view.loadUrl(url);
                 return true;
             }
 
             public void onPageFinished(WebView view, String url) {
-                Log.i("WebView", "Finished loading URL: " + url);
                 if (progressBar.isShowing()) {
                     progressBar.dismiss();
                 }
@@ -52,8 +62,7 @@ public class ForgotPassword extends AppCompatActivity {
 
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
                 _forgotWebView.reload();
-                Log.e("WebView", "Error: " + description);
-                Toast.makeText(ForgotPassword.this, "Connection Error", Toast.LENGTH_SHORT).show();
+                Toast.makeText(ForgotPassword.this, "Connection Error", Toast.LENGTH_LONG).show();
             }
         });
         _loginLink.setOnClickListener(new View.OnClickListener() {

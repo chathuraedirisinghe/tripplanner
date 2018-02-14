@@ -41,7 +41,6 @@
         android:layout_width="30dp"
         android:layout_height="30dp"
         android:layout_gravity="end"
-        android:scaleType="center"
         android:layout_marginTop="110dp"
         android:layout_marginRight="18dp"
         android:clickable="true"
@@ -55,12 +54,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:visibility="gone"
-        android:paddingTop="10dp"
-        android:paddingLeft="10dp"
-        android:elevation="15dp"
         android:background="@android:color/white"
-        app:srcCompat="@drawable/legend" />
+        android:visibility="gone"
+        android:layout_margin="20dp"
+        android:elevation="15dp"
+        android:paddingLeft="10dp"
+        android:paddingTop="10dp"
+        app:srcCompat="@drawable/legend_image" />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fabRoute"

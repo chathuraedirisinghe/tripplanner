@@ -34,6 +34,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.CookieManager;
 import java.util.HashMap;
 
 import cat.ereza.customactivityoncrash.config.CaocConfig;
@@ -77,7 +78,7 @@ public class MainActivity extends AppCompatActivity
                 .logErrorOnRestart(false) //default: true
                 .trackActivities(true) //default: false
                 .minTimeBetweenCrashesMs(2000) //default: 3000
-                .errorDrawable(R.drawable.logo) //default: bug image
+                .errorDrawable(R.mipmap.ic_launcher) //default: bug image
                 .restartActivity(MainActivity.class) //default: null (your app's launch activity)
                 .apply();
 

@@ -6,6 +6,9 @@
     <color name="year">#999999</color>
     <color name="title">#222222</color>
 
+    <color name="fab_background_color">#63bb46</color>
+    <color name="dialog_background_color">#63bb46</color>
+
     <!-- Screens background color-->
     <color name="bg_screen1">#63bb46</color>
     <color name="bg_screen2">#20d2bb</color>

@@ -203,4 +203,8 @@ public class SessionManager {
         editor.putString(electric_vehicles, String.valueOf(vehicles));
         editor.commit();
     }
+
+    public String getVehicle(){
+        return pref.getString(electric_vehicles,null);
+    }
 }

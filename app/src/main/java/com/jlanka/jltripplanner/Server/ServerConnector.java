@@ -74,7 +74,6 @@ public class ServerConnector {
                                         HttpHeaderParser.parseCharset(response.headers, "utf-8"));
                                 // Now you can use any deserializer to make sense of data
                                 obj = new JSONObject(res);
-                                mess=obj.toString().split(":");
                             } catch (UnsupportedEncodingException e1) {
                                 // Couldn't properly decode data to string
                                 e1.printStackTrace();
@@ -87,10 +86,7 @@ public class ServerConnector {
                         if (error instanceof NetworkError) {
                             message = "Cannot connect to Internet...Please check your connection!";
                         } else if (error instanceof ServerError) {
-                            if (mess==null)
-                                message = "Cannot connect to Internet...Please check your connection!";
-                            else
-                                message = mess[1].replaceAll("[^a-zA-Z-.' ]","");
+                            message = "Cannot connect to Internet...Please check your connection!";
                             GoogleAnalyticsService.getInstance().trackException(context,error);
                         } else if (error instanceof AuthFailureError) {
                             message = "Incorrect username or password!";

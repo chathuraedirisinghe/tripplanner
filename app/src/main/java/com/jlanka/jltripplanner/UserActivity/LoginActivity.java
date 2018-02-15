@@ -228,12 +228,19 @@ public class LoginActivity extends AppCompatActivity {
         serverConnector.setOnErrorListner(new OnErrorListner() {
             @Override
             public void onError(String error, JSONObject obj) {
-                if (obj!=null)
-                    System.out.println("SERVER RESPONSE : " + error + "OBJ : "+obj.toString());
+                String message=error;
+                if (obj!=null) {
+                    System.out.println("SERVER RESPONSE : " + error + "OBJ : " + obj.toString());
+                    try {
+                        message = obj.getString("status");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
 
                 AlertDialog alertDialog = new AlertDialog.Builder(LoginActivity.this).create();
                 alertDialog.setTitle("Sorry");
-                alertDialog.setMessage(error);
+                alertDialog.setMessage(message);
                 alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();

@@ -153,7 +153,7 @@ public class MainActivity extends AppCompatActivity
             if(vehicles==null || vehicles.equals("[]")){
                 fragmentManager.beginTransaction().replace(R.id.content_frame, new VehicleFragment()).commit();
             }else{
-                fragmentManager.beginTransaction().replace(R.id.content_frame, MapFragment.getInstance()).commit();
+                fragmentManager.beginTransaction().replace(R.id.content_frame, new MapFragment()).commit();
             }
         }
 

@@ -5,7 +5,9 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.RequiresApi;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -71,6 +73,8 @@ public class ProfileFragment extends Fragment {
     ProgressDialog progress;
     String user_mobile;
     SessionManager session;
+    private TextView tv_message;
+    private AlertDialog dialog;
     FragmentManager fragmentManager = getFragmentManager();
 
     public ProfileFragment() {
@@ -95,28 +99,7 @@ public class ProfileFragment extends Fragment {
         user_id = user.get(SessionManager.user_id);
         user_mobile = user.get(SessionManager.user_mobile);
 
-        ArrayList<String> ar = new ArrayList<String>();
-
-
-        try {
-            JSONArray obj = new JSONArray(user.get(SessionManager.electric_vehicles));
-            for (int i = 0; i < obj.length(); i++){
-                JSONObject vehicle_object = obj.getJSONObject(i);
-                final String model = vehicle_object.getString("model");
-                final String reg_no = vehicle_object.getString("reg_no");
-                    ar.add(model+"   "+reg_no);
-            }
-        } catch (Throwable t) {
-            Log.e("My App", "Could not parse malformed JSON: \"" + t + "\"");
-        }
-
-        String[] myVehicle = ar.toArray(new String[0]);
-
-        Spinner spinner = (Spinner)myView.findViewById(R.id.spinner);;
-        ArrayAdapter<String> myVehicleGUIArray= new ArrayAdapter<String>(getActivity(),android.R.layout.simple_spinner_item, myVehicle);
-        myVehicleGUIArray.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        myVehicleGUIArray.notifyDataSetChanged();
-        spinner.setAdapter(myVehicleGUIArray);
+        addToSpinner(user);
 
 
 //        getProfileData(user_mobile);
@@ -130,116 +113,103 @@ public class ProfileFragment extends Fragment {
             public void onClick(View v) {
                 LayoutInflater li = LayoutInflater.from(getActivity().getBaseContext());
                 View promptsView = li.inflate(R.layout.addvehicle, null);
-                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
-                alertDialogBuilder.setView(promptsView);
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                builder.setView(promptsView);
+                builder.setTitle("Add Vehicle");
 
                 final EditText regNo = (EditText)promptsView.findViewById(R.id.reg_number);
                 final EditText vin = (EditText)promptsView.findViewById(R.id.vehicle_vin);
                 final EditText model = (EditText)promptsView.findViewById(R.id.vehicle_model);
                 final EditText year = (EditText)promptsView.findViewById(R.id.vehicle_year);
+                tv_message = (TextView) promptsView.findViewById(R.id.vehicle_tv_message);
 
-                alertDialogBuilder
-                        .setCancelable(false)
-                        .setPositiveButton("OK",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog,int id) {
-                                        String v_reg = String.valueOf(regNo.getText());
-                                        String v_in = String.valueOf(vin.getText());
-                                        String v_model = String.valueOf(model.getText());
-                                        String v_year = String.valueOf(year.getText());
+                builder.setPositiveButton("Add Vehicle", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+                dialog = builder.create();
+                dialog.show();
+                dialog.setCancelable(false);
+                dialog.setCanceledOnTouchOutside(false);
+                dialog.getButton(dialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.colorPrimaryDark));
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        String v_reg = String.valueOf(regNo.getText());
+                        String v_in = String.valueOf(vin.getText());
+                        String v_model = String.valueOf(model.getText());
+                        String v_year = String.valueOf(year.getText());
+                        System.out.println(v_reg.isEmpty()+","+v_reg.length()+","+v_reg);
+                        if (!v_reg.isEmpty()){
+                            if(!v_in.isEmpty()){
+                                if (!v_model.isEmpty()){
+                                    if (!v_year.isEmpty()){
                                         sendData(new Vehicle(user_id,v_reg,v_in,v_model,v_year));
-                                        ar.add(model+"   "+v_reg);
-//                                        spinner.setAdapter(myVehicleGUIArray);
                                     }
-                                })
-                        .setNegativeButton("Cancel",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog,int id) {
-                                        dialog.cancel();
+                                    else{
+                                        tv_message.setVisibility(View.VISIBLE);
+                                        tv_message.setText("Please enter a Year");
                                     }
-                                });
-
-                // create alert dialog
-                AlertDialog alertDialog = alertDialogBuilder.create();
-                // show it
-                alertDialog.show();
-                alertDialog.getButton(alertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.colorPrimaryDark));
+                                }
+                                else{
+                                    tv_message.setVisibility(View.VISIBLE);
+                                    tv_message.setText("Please enter a Model name");
+                                }
+                            }
+                            else{
+                                tv_message.setVisibility(View.VISIBLE);
+                                tv_message.setText("Please enter a valid VIN number");
+                            }
+                        }
+                        else {
+                            tv_message.setVisibility(View.VISIBLE);
+                            tv_message.setText("Please enter a valid Registration Number");
+                        }
+                    }
+                });
             }
         });
         return myView;
     }
 
-    private void getProfileData(final String user_mobile) {
-        RequestQueue rq = Volley.newRequestQueue(getActivity().getApplicationContext());
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, ServerConnector.SERVER_ADDRESS,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        try {
+    private void addToSpinner(HashMap<String, String> user) {
+        ArrayList<String> ar = new ArrayList<String>();
+        try {
 
-                            JSONObject jsonResponse = new JSONObject(response);
-                            System.out.println("User Data : "+jsonResponse);
-                            String credit = jsonResponse.getString("credit");
-                            String fname = jsonResponse.getString("FName");
-                            String lname = jsonResponse.getString("LName");
-                            String title = jsonResponse.getString("title");
-                            String occupation= jsonResponse.getString("occupation");
-                            String email= jsonResponse.getString("email");
-                            String nic= jsonResponse.getString("nic");
-                            String altmobno= jsonResponse.getString("AltMblNo");
-                            String birthday= jsonResponse.getString("Birthday");
-                            String address= jsonResponse.getString("Adress");
-                            String cartype= jsonResponse.getString("carType");
-
-//                            session.createProfileData(credit,fname,lname,title,occupation,email,nic,altmobno,birthday,address,cartype);
-
-//                            updateProfileWindow();
-
-                        } catch (Exception e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-                        progress.dismiss();
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        progress.dismiss();
-                        Log.d("Error   ", String.valueOf(error));
-                        Toast.makeText(getActivity().getApplicationContext(), "EROOORRRRRRRRRRRR"+error, Toast.LENGTH_SHORT).show();
-                    }
-                })
-        {
-            @Override
-            protected Map<String, String> getParams()
-            {
-                Map<String, String>  params = new HashMap<String, String>();
-                params.put("fnID", "3");
-                params.put("mobNo", user_mobile);
-                return params;
+            JSONArray obj = new JSONArray(user.get(SessionManager.electric_vehicles));
+            for (int i = 0; i < obj.length(); i++){
+                JSONObject vehicle_object = obj.getJSONObject(i);
+                final String model = vehicle_object.getString("model");
+                final String reg_no = vehicle_object.getString("reg_no");
+                ar.add(model+"   "+reg_no);
             }
-        };
-        rq.add(stringRequest);
-        //initialize the progress dialog and show it
-        progress = new ProgressDialog(getActivity());
-        progress.setMessage("Requesting profile data...");
-        progress.setCancelable(false);
-        progress.show();
+        } catch (Throwable t) {
+            Log.e("My App", "Could not parse malformed JSON: \"" + t + "\"");
+        }
 
+        String[] myVehicle = ar.toArray(new String[0]);
+
+        Spinner spinner = (Spinner)myView.findViewById(R.id.spinner);;
+        ArrayAdapter<String> myVehicleGUIArray= new ArrayAdapter<String>(getActivity(),android.R.layout.simple_spinner_item, myVehicle);
+        myVehicleGUIArray.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        myVehicleGUIArray.notifyDataSetChanged();
+        spinner.setAdapter(myVehicleGUIArray);
     }
 
     private void setProfile() {
         HashMap<String, String> user = session.getUserDetails();
-//        _title.setText(user.get(SessionManager.user_title));
         _fname.setText(user.get(SessionManager.user_fname));
         _lname.setText(user.get(SessionManager.user_lname));
-//        _occupation.setText(user.get(SessionManager.user_occupation));
         _email.setText(user.get(SessionManager.user_email));
-//        _nic.setText(user.get(SessionManager.user_nic));
         _mobile.setText(user.get(SessionManager.user_mobile));
-//        _address.setText(user.get(SessionManager.user_address));
-//        _cartype.setText(user.get(SessionManager.electric_vehicles));
 
     }
 
@@ -265,10 +235,12 @@ public class ProfileFragment extends Fragment {
                 Log.w("User Details : ", String.valueOf(response));
                 try{
                     JSONObject VehicleDetails = new JSONObject(response);
-                    JSONArray vehicles = VehicleDetails.getJSONArray("electric_vehicles");
-                    session.setVehicles(vehicles);
+                    JSONArray _vehicles = new JSONArray(session.getVehicle());
+                    _vehicles.put(VehicleDetails);
+                    session.setVehicles(_vehicles);
                     GoogleAnalyticsService.getInstance().setAction("Vehicle","Add Vehicle",modal+year+"");
-
+                    addToSpinner(session.getUserDetails());
+                    dialog.dismiss();
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -277,19 +249,37 @@ public class ProfileFragment extends Fragment {
         });
 
         serverConnector.setOnErrorListner(new OnErrorListner() {
+            @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
             public void onError(String error, JSONObject obj) {
                 System.out.println("SERVER RESPONSE : " + error + "OBJ : "+obj.toString());
+                JSONArray reg=null;
+                JSONArray vin=null;
+                String message=null;
+                try {
+                    reg = obj.getJSONArray("reg_no");
+                }
+                catch (Exception e) {
+                }
 
-                AlertDialog alertDialog = new AlertDialog.Builder(getActivity()).create();
-                alertDialog.setTitle("Sorry");
-                alertDialog.setMessage(error);
-                alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-                alertDialog.show();
+                try {
+                    vin = obj.getJSONArray("vin");
+                }
+                catch (Exception e) {
+                }
+
+                try {
+                    if (reg != null)
+                        message = reg.get(0).toString().substring(0, 1).toUpperCase() + reg.get(0).toString().substring(1);
+                    else if ( vin != null)
+                        message = vin.get(0).toString().substring(0, 1).toUpperCase() + vin.get(0).toString().substring(1);
+                    else if (message==null)
+                        message=error;
+
+                    tv_message.setText(message);
+                    tv_message.setVisibility(View.VISIBLE);
+                }
+                catch (Exception e){e.printStackTrace();}
             }
         });
         serverConnector.sendRequest();

@@ -217,17 +217,17 @@ public class VehicleFragment extends Fragment {
                 Log.w("User Details : ", String.valueOf(response));
                 try{
                     JSONObject user_data = new JSONObject(response);
-                    String err  = user_data.getString("reg_no");
-                    if(err.contains("already exists")){
-                        tv_message.setVisibility(View.VISIBLE);
-                        tv_message.setText(err);
-                    }else{
-                        String reg_no = user_data.getString("reg_no");
-                        String vin = user_data.getString("vin");
-                        String model = user_data.getString("model");
-                        String year = user_data.getString("year");
-                        vehicleAdapter.addVehicle(new Vehicle(user_id,reg_no,vin,model,year));
-                    }
+                    JSONObject VehicleDetails = new JSONObject(response);
+                    JSONArray _vehicles = new JSONArray(session.getVehicle());
+                    _vehicles.put(VehicleDetails);
+                    session.setVehicles(_vehicles);
+                    GoogleAnalyticsService.getInstance().setAction("Vehicle","Add Vehicle",modal+year+"");
+                    dialog.dismiss();
+                    String reg_no = user_data.getString("reg_no");
+                    String vin = user_data.getString("vin");
+                    String model = user_data.getString("model");
+                    String year = user_data.getString("year");
+                    vehicleAdapter.addVehicle(new Vehicle(user_id,reg_no,vin,model,year));
                     GoogleAnalyticsService.getInstance().setAction("Vehicle","Add Vehicle",modal+year+"");
 
                 } catch (JSONException e) {
@@ -241,23 +241,33 @@ public class VehicleFragment extends Fragment {
             @Override
             public void onError(String error, JSONObject obj) {
                 System.out.println("SERVER RESPONSE : " + error + "OBJ : "+obj.toString());
+                JSONArray reg=null;
+                JSONArray vin=null;
+                String message=null;
+                try {
+                    reg = obj.getJSONArray("reg_no");
+                }
+                catch (Exception e) {
+                }
 
-                AlertDialog alertDialog = new AlertDialog.Builder(getActivity()).create();
-                String[] mess=error.split(".");
-                if (mess.length>0) {
-                    alertDialog.setTitle(mess[1]);
-                    alertDialog.setMessage(mess[0]);
+                try {
+                    vin = obj.getJSONArray("vin");
                 }
-                else {
-                    alertDialog.setTitle("Sorry");
-                    alertDialog.setMessage(error);
+                catch (Exception e) {
                 }
-                alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-                alertDialog.show();
+
+                try {
+                    if (reg != null)
+                        message = reg.get(0).toString().substring(0, 1).toUpperCase() + reg.get(0).toString().substring(1);
+                    else if ( vin != null)
+                        message = vin.get(0).toString().substring(0, 1).toUpperCase() + vin.get(0).toString().substring(1);
+                    else if (message==null)
+                        message=error;
+
+                    tv_message.setText(message);
+                    tv_message.setVisibility(View.VISIBLE);
+                }
+                catch (Exception e){e.printStackTrace();}
             }
         });
         serverConnector.sendRequest();

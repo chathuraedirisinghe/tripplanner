@@ -95,7 +95,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="numberPassword"
-                android:hint="PIN Number"/>
+                android:hint="PIN"/>
         </android.support.design.widget.TextInputLayout>
 
 

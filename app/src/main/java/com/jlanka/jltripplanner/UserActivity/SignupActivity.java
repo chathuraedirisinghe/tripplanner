@@ -273,7 +273,7 @@ public class SignupActivity extends Activity {
         }
 
         if(user_mobile.isEmpty() || !Patterns.PHONE.matcher(user_mobile).matches() || user_mobile.length()>10 || user_mobile.length()<10){
-            _mobileText.setError("Maximum length should be 10 digits");
+            _mobileText.setError("Length should be 10 digits");
             valid = false;
         }else{
             _mobileText.setError(null);

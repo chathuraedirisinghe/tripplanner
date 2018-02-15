@@ -6,6 +6,7 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,8 +27,14 @@ import butterknife.ButterKnife;
 
 import com.jlanka.jltripplanner.GoogleAnalyticsService;
 import com.jlanka.jltripplanner.R;
+import com.jlanka.jltripplanner.Server.OnErrorListner;
+import com.jlanka.jltripplanner.Server.OnResponseListner;
 import com.jlanka.jltripplanner.Server.ServerConnector;
 import com.jlanka.jltripplanner.UserActivity.SessionManager;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +47,7 @@ public class SettingsFragment extends Fragment {
     @BindView(R.id.btn_chg_password) Button _btn_chg_password;
 
     SessionManager session;
-    String user_fname, user_lname, user_title, user_mail, user_mobile, user_passwd;
+    String user_name,user_fname, user_lname, user_title, user_mail, user_mobile, user_passwd;
 
     private EditText et_old_password,et_new_password;
     private TextView tv_message;
@@ -84,7 +91,7 @@ public class SettingsFragment extends Fragment {
 
         // get user data from session
         HashMap<String, String> user = session.getUserDetails();
-
+        user_name = user.get(SessionManager.user_name);
         user_fname = user.get(SessionManager.user_fname);
         user_lname = user.get(SessionManager.user_lname);
         user_title = user.get(SessionManager.user_title);
@@ -129,13 +136,15 @@ public class SettingsFragment extends Fragment {
                 System.out.println(old_password+","+new_password+","+user_passwd);
 
                 if(!old_password.isEmpty() || !new_password.isEmpty()) {
+                    System.out.println(new_password.length() + "   "+ old_password.length());
                     if (new_password.length() > 3 && new_password.length() < 7) {
                         if (!old_password.equals(user_passwd)) {
                             tv_message.setVisibility(View.VISIBLE);
                             tv_message.setText("Current PIN is Wrong");
                         }
                         else {
-                            changePasswordProcess(user_mobile, old_password, new_password);
+                            System.out.println("USername ; " + user_name);
+                            changePasswordProcess(user_name, old_password, new_password);
                         }
                     }
                     else{
@@ -151,56 +160,56 @@ public class SettingsFragment extends Fragment {
         });
     }
 
-    private void changePasswordProcess(final String user_mobile, final String old_password, final String new_password) {
+    private void changePasswordProcess(final String user_name, final String old_password, final String new_password) {
         pd = ProgressDialog.show(getActivity(), "", "Please Wait...", true);
-        RequestQueue rq = Volley.newRequestQueue(getActivity());
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, ServerConnector.SERVER_ADDRESS+"reset_password/",
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        System.out.println("Server Respond : "+response);
-                        if (response.contains("1")) {
-                            pd.dismiss();
-                            tv_message.setVisibility(View.GONE);
-                            dialog.dismiss();
-                            Snackbar.make(getView(), "PIN Changed Successfully.", Snackbar.LENGTH_LONG).show();
 
-                            AlertDialog.Builder db = new AlertDialog.Builder(getActivity());
+        Map<String, String> params = new HashMap<String, String>();
+        params.put("username",user_name );
+        params.put("password", old_password);
+        params.put("new_password", new_password);
 
-                            db.setTitle("Successfully Changed!")
-                                    .setMessage("You will automatically redirect to Login page")
-                                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            session.logoutUser();
-                                        }
-                                    })
-                                    .setIcon(android.R.drawable.ic_dialog_alert)
-                                    .show();
-                        } else {
-                            pd.dismiss();
-                            tv_message.setVisibility(View.VISIBLE);
-                            tv_message.setText("Unable to Change PIN.");
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        pd.dismiss();
-                        tv_message.setVisibility(View.VISIBLE);
-                        tv_message.setText(error.getLocalizedMessage());
-                    }
-                }) {
+        ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+"ev_owners/change_password/",params, Request.Method.POST,getActivity());
+        serverConnector.setOnReponseListner(new OnResponseListner() {
             @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<String, String>();
-                params.put("fnID", "8");
-                params.put("mobNo", user_mobile);
-                params.put("passwd", old_password);
-                params.put("newPasswd", new_password);
-                return params;
+            public void onResponse(String response) {
+                Log.w("User Details : ", String.valueOf(response));
+                System.out.println("Server Respond : "+response);
+                if (response.contains("1")) {
+                    pd.dismiss();
+                    tv_message.setVisibility(View.GONE);
+                    dialog.dismiss();
+                    Snackbar.make(getView(), "PIN Changed Successfully.", Snackbar.LENGTH_LONG).show();
+
+                    AlertDialog.Builder db = new AlertDialog.Builder(getActivity());
+
+                    db.setTitle("Successfully Changed!")
+                            .setMessage("You will automatically redirect to Login page")
+                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    session.logoutUser();
+                                }
+                            })
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .show();
+                } else {
+                    pd.dismiss();
+                    tv_message.setVisibility(View.VISIBLE);
+                    tv_message.setText("Unable to Change PIN.");
+                }
             }
-        };
-        rq.add(stringRequest);
+        });
+
+        serverConnector.setOnErrorListner(new OnErrorListner() {
+            @Override
+            public void onError(String error, JSONObject obj) {
+                if (obj!=null)
+                System.out.println("SERVER RESPONSE : " + error + "OBJ : "+obj.toString());
+
+                pd.dismiss();
+                tv_message.setVisibility(View.VISIBLE);
+                tv_message.setText(error);
+            }
+        });
+        serverConnector.sendRequest();
     }
 }

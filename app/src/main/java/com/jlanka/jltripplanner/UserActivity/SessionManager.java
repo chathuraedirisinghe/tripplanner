@@ -147,6 +147,7 @@ public class SessionManager {
         HashMap<String, String> user = new HashMap<String, String>();
 
         user.put(user_id, pref.getString(user_id,null));
+        user.put(user_name, pref.getString(user_name,null));
         user.put(user_title, pref.getString(user_title, null));
         user.put(user_credit, pref.getString(user_credit, null));
         user.put(user_fname, pref.getString(user_fname, null));

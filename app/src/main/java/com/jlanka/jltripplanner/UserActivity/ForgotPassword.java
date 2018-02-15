@@ -19,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.jlanka.jltripplanner.R;
+import com.jlanka.jltripplanner.Server.ServerConnector;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -35,7 +36,7 @@ public class ForgotPassword extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forgot_password);
         ButterKnife.bind(this);
-        _forgotWebView.loadUrl("http://yvk.rxn.mybluehost.me:8000/reset_password/");
+        _forgotWebView.loadUrl(ServerConnector.SERVER_ADDRESS+"reset_password");
         _forgotWebView.clearCache(true);
         _forgotWebView.clearHistory();
         _forgotWebView.getSettings().setJavaScriptEnabled(true);

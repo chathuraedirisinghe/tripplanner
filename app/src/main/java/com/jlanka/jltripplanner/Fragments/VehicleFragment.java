@@ -20,6 +20,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.android.volley.Request;
 
@@ -57,6 +58,8 @@ public class VehicleFragment extends Fragment {
 
     FragmentManager fragmentManager;
 
+    private TextView tv_message;
+    private AlertDialog dialog;
     ImageButton addVehicleButton;
     Button done;
 
@@ -98,39 +101,68 @@ public class VehicleFragment extends Fragment {
             public void onClick(View v) {
                 LayoutInflater li = LayoutInflater.from(getActivity().getBaseContext());
                 View promptsView = li.inflate(R.layout.addvehicle, null);
-                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
-                alertDialogBuilder.setView(promptsView);
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                builder.setView(promptsView);
+                builder.setTitle("Add Vehicle");
 
                 final EditText regNo = (EditText)promptsView.findViewById(R.id.reg_number);
                 final EditText vin = (EditText)promptsView.findViewById(R.id.vehicle_vin);
                 final EditText model = (EditText)promptsView.findViewById(R.id.vehicle_model);
                 final EditText year = (EditText)promptsView.findViewById(R.id.vehicle_year);
+                tv_message = (TextView) promptsView.findViewById(R.id.vehicle_tv_message);
 
-                alertDialogBuilder
-                        .setCancelable(false)
-                        .setPositiveButton("OK",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog,int id) {
-                                        String v_reg = String.valueOf(regNo.getText());
-                                        String v_in = String.valueOf(vin.getText());
-                                        String v_model = String.valueOf(model.getText());
-                                        String v_year = String.valueOf(year.getText());
+                builder.setPositiveButton("Add Vehicle", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+                dialog = builder.create();
+                dialog.show();
+                dialog.setCancelable(false);
+                dialog.setCanceledOnTouchOutside(false);
+                dialog.getButton(dialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.colorPrimaryDark));
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        String v_reg = String.valueOf(regNo.getText());
+                        String v_in = String.valueOf(vin.getText());
+                        String v_model = String.valueOf(model.getText());
+                        String v_year = String.valueOf(year.getText());
+                        System.out.println(v_reg.isEmpty()+","+v_reg.length()+","+v_reg);
+                        if (!v_reg.isEmpty()){
+                            if(!v_in.isEmpty()){
+                                if (!v_model.isEmpty()){
+                                    if (!v_year.isEmpty()){
                                         sendData(new Vehicle(user_id,v_reg,v_in,v_model,v_year));
-
                                     }
-                                })
-                        .setNegativeButton("Cancel",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog,int id) {
-                                        dialog.cancel();
+                                    else{
+                                        tv_message.setVisibility(View.VISIBLE);
+                                        tv_message.setText("Please enter a Year");
                                     }
-                                });
-
-                // create alert dialog
-                AlertDialog alertDialog = alertDialogBuilder.create();
-                // show it
-                alertDialog.show();
-                alertDialog.getButton(alertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.colorPrimaryDark));
+                                }
+                                else{
+                                    tv_message.setVisibility(View.VISIBLE);
+                                    tv_message.setText("Please enter a Model name");
+                                }
+                            }
+                            else{
+                                tv_message.setVisibility(View.VISIBLE);
+                                tv_message.setText("Please enter a valid VIN number");
+                            }
+                        }
+                        else {
+                            tv_message.setVisibility(View.VISIBLE);
+                            tv_message.setText("Please enter a valid Registration Number");
+                        }
+                    }
+                });
             }
         });
 
@@ -187,6 +219,8 @@ public class VehicleFragment extends Fragment {
                     JSONObject user_data = new JSONObject(response);
                     String err  = user_data.getString("reg_no");
                     if(err.contains("already exists")){
+                        tv_message.setVisibility(View.VISIBLE);
+                        tv_message.setText(err);
                     }else{
                         String reg_no = user_data.getString("reg_no");
                         String vin = user_data.getString("vin");
@@ -209,8 +243,15 @@ public class VehicleFragment extends Fragment {
                 System.out.println("SERVER RESPONSE : " + error + "OBJ : "+obj.toString());
 
                 AlertDialog alertDialog = new AlertDialog.Builder(getActivity()).create();
-                alertDialog.setTitle("Sorry");
-                alertDialog.setMessage(error);
+                String[] mess=error.split(".");
+                if (mess.length>0) {
+                    alertDialog.setTitle(mess[1]);
+                    alertDialog.setMessage(mess[0]);
+                }
+                else {
+                    alertDialog.setTitle("Sorry");
+                    alertDialog.setMessage(error);
+                }
                 alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();

@@ -45,10 +45,6 @@
             android:label="@string/title_activity_login"
             android:screenOrientation="portrait" />
         <activity
-            android:name="com.jlanka.jltripplanner.Animators.DialogActivity"
-            android:label="DialogActivity"
-            android:screenOrientation="portrait" />
-        <activity
             android:name="com.jlanka.jltripplanner.UserActivity.SignupActivity"
             android:label="@string/title_activity_signup"
             android:screenOrientation="portrait" />

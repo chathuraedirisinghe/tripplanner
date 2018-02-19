@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
@@ -62,12 +63,12 @@ public class GeofenceMonitorService extends IntentService {
 
             switch (triggeringGeofences.get(0).getRequestId()){
                 case "Charger_Location":
-                    title="Reached Charger Location";
-                    message="Go back to the app to start charging";
+                    title="Reached charging station";
+                    message="Start charging from the app";
                     break;
                 case "Destination":
                     title="Reached destination";
-                    message="Thank you for using GoEV Solutions";
+                    message="Thank you for using JL Trip Planner";
                     break;
             }
             // Send notification details as a String
@@ -128,8 +129,10 @@ public class GeofenceMonitorService extends IntentService {
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this);
 
         notificationBuilder
-                .setSmallIcon(R.drawable.dcfa)
+                .setSmallIcon(R.drawable.location_icon)
                 .setColor(Color.RED)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(),
+                        R.mipmap.ic_launcher_round))
                 .setPriority(NotificationManager.IMPORTANCE_HIGH)
                 .setContentTitle(title)
                 .setContentText(message)

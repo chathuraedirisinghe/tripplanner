@@ -232,8 +232,10 @@ public class MainActivity extends AppCompatActivity
             fragmentManager.beginTransaction().replace(R.id.content_frame, new SettingsFragment()).addToBackStack(SettingsFragment.class.getName()).commit();
         } else if (id == R.id.nav_logout) {
             session.logoutUser();
-            ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+"ev_owners/logout/",null,Request.Method.GET,this);
-            serverConnector.setOnReponseListner(new OnResponseListner() {
+
+            ServerConnector.getInstance(getApplicationContext()).cancelRequest("Logout");
+            ServerConnector.getInstance(getApplicationContext()).sendRequest(ServerConnector.SERVER_ADDRESS+"ev_owners/logout/",null,Request.Method.GET,
+            new OnResponseListner() {
                 @Override
                 public void onResponse(String response) {
             System.out.println("Logout : "+response);
@@ -248,9 +250,9 @@ public class MainActivity extends AppCompatActivity
                     e.printStackTrace();
                 }
                 }
-            });
+            },
 
-            serverConnector.setOnErrorListner(new OnErrorListner() {
+            new OnErrorListner() {
                 @Override
                 public void onError(String error, JSONObject obj) {
                     System.out.println("SERVER RESPONSE : " + error);
@@ -266,8 +268,7 @@ public class MainActivity extends AppCompatActivity
                     });
                     alertDialog.show();
                 }
-            });
-            serverConnector.sendRequest();
+            },"Logout");
         }
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);

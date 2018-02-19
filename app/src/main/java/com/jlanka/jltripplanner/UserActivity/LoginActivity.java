@@ -181,8 +181,9 @@ public class LoginActivity extends AppCompatActivity {
         params.put("username", username);
         params.put("password", password);
 
-        final ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+"ev_owners/login/",params,Request.Method.POST,this);
-        serverConnector.setOnReponseListner(new OnResponseListner() {
+        ServerConnector.getInstance(getApplicationContext()).cancelRequest("CheckUser");
+        ServerConnector.getInstance(getApplicationContext()).sendRequest(ServerConnector.SERVER_ADDRESS+"ev_owners/login/",params,Request.Method.POST,
+        new OnResponseListner() {
             @Override
             public void onResponse(String response) {
 
@@ -225,9 +226,9 @@ public class LoginActivity extends AppCompatActivity {
                 }
 
             }
-        });
+        },
 
-        serverConnector.setOnErrorListner(new OnErrorListner() {
+        new OnErrorListner() {
             @Override
             public void onError(String error, JSONObject obj) {
                 String message=error;
@@ -252,40 +253,46 @@ public class LoginActivity extends AppCompatActivity {
                 });
                 alertDialog.show();
             }
-        });
-        serverConnector.sendRequest();
+        },"CheckUser");
     }
 
     private void getUserDetails(String id, final String password) {
-        ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+"ev_owners/"+id+"/",null,Request.Method.GET,this);
-        serverConnector.setOnReponseListner(new OnResponseListner() {
-            @Override
-            public void onResponse(String response) {
-                Log.w("User Details : ", String.valueOf(response));
-                try{
-                    JSONObject user_data = new JSONObject(response);
-                    String id = user_data.getString("id");
-                    String username = user_data.getString("username");
-                    String credits = user_data.getString("balance");
-                    String fname = user_data.getString("first_name");
-                    String lname = user_data.getString("last_name");
-                    String email = user_data.getString("email");
-                    String mob = user_data.getString("contact_number");
-                    JSONArray vehicles = user_data.getJSONArray("electric_vehicles");
+        ServerConnector.getInstance(getApplicationContext()).cancelRequest("getUserDetails");
+        ServerConnector.getInstance(getApplicationContext()).sendRequest(ServerConnector.SERVER_ADDRESS + "ev_owners/" + id + "/", null, Request.Method.GET,
+                new OnResponseListner() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.w("User Details : ", String.valueOf(response));
+                        try {
+                            JSONObject user_data = new JSONObject(response);
+                            String id = user_data.getString("id");
+                            String username = user_data.getString("username");
+                            String credits = user_data.getString("balance");
+                            String fname = user_data.getString("first_name");
+                            String lname = user_data.getString("last_name");
+                            String email = user_data.getString("email");
+                            String mob = user_data.getString("contact_number");
+                            JSONArray vehicles = user_data.getJSONArray("electric_vehicles");
 
 //                    if(vehicle.getString(0).equals(null)){
 //                        vehicle = "default";
 //                    }
 
-                    session.createLoginSession(id, username, password, fname, lname, email, mob, credits, vehicles);
-                    onLoginSuccess();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                            session.createLoginSession(id, username, password, fname, lname, email, mob, credits, vehicles);
+                            onLoginSuccess();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
 
-            }
-        });
-        serverConnector.sendRequest();
+                    }
+                },
+                new OnErrorListner() {
+                    @Override
+                    public void onError(String error, JSONObject obj) {
+
+                    }
+                },
+                "getUserDetails");
     }
 
     private void send_verification_email() {

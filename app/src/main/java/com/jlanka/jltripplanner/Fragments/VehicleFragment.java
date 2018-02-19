@@ -174,25 +174,35 @@ public class VehicleFragment extends Fragment {
 
     private void getDetails(String user_id) {
         ProgressDialog pd = ProgressDialog.show(getActivity(), "", "Please Wait...", true);
-        ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+"ev_owners/"+user_id+"/",null,Request.Method.GET,getActivity());
-        serverConnector.setOnReponseListner(new OnResponseListner() {
-            @Override
-            public void onResponse(String response) {
-                Log.w("User Details : ", String.valueOf(response));
-                try{
-                    pd.dismiss();
-                    JSONObject user_data = new JSONObject(response);
-                    JSONArray vehicles = user_data.getJSONArray("electric_vehicles");
-                    session.setVehicles(vehicles);
-                    fragmentManager.beginTransaction().replace(R.id.content_frame,new MapFragment()).commit();
 
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+        ServerConnector.getInstance(getActivity()).cancelRequest("GetUser");
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+"ev_owners/"+user_id+"/",null,Request.Method.GET,
 
-            }
-        });
-        serverConnector.sendRequest();
+                new OnResponseListner() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.w("User Details : ", String.valueOf(response));
+                        try{
+                            pd.dismiss();
+                            JSONObject user_data = new JSONObject(response);
+                            JSONArray vehicles = user_data.getJSONArray("electric_vehicles");
+                            session.setVehicles(vehicles);
+                            fragmentManager.beginTransaction().replace(R.id.content_frame,new MapFragment()).commit();
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                },
+
+                new OnErrorListner() {
+                    @Override
+                    public void onError(String error, JSONObject obj) {
+
+                    }
+                },
+                "GetUser");
     }
 
     private void sendData(Vehicle vehicle) {
@@ -210,8 +220,9 @@ public class VehicleFragment extends Fragment {
         params.put("model", modal);
         params.put("year", year);
 
-        ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+"electric_vehicles/",params, Request.Method.POST,getActivity());
-        serverConnector.setOnReponseListner(new OnResponseListner() {
+        ServerConnector.getInstance(getActivity()).cancelRequest("CreateVehicle");
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+"electric_vehicles/",params, Request.Method.POST,
+        new OnResponseListner() {
             @Override
             public void onResponse(String response) {
                 Log.w("User Details : ", String.valueOf(response));
@@ -235,9 +246,9 @@ public class VehicleFragment extends Fragment {
                 }
 
             }
-        });
+        },
 
-        serverConnector.setOnErrorListner(new OnErrorListner() {
+        new OnErrorListner() {
             @Override
             public void onError(String error, JSONObject obj) {
                 System.out.println("SERVER RESPONSE : " + error + "OBJ : "+obj.toString());
@@ -262,8 +273,7 @@ public class VehicleFragment extends Fragment {
                 tv_message.setText(message);
                 tv_message.setVisibility(View.VISIBLE);
             }
-        });
-        serverConnector.sendRequest();
+        },"CreateVehicle");
 
     }
 

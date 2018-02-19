@@ -3,10 +3,13 @@ package com.jlanka.jltripplanner.Server;
 import android.content.Context;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkError;
 import com.android.volley.NetworkResponse;
 import com.android.volley.NoConnectionError;
 import com.android.volley.ParseError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
@@ -29,22 +32,24 @@ import java.util.Map;
  */
 
 public class ServerConnector {
+    private static ServerConnector serverConnector;
     public static final String SERVER_ADDRESS = "http://yvk.rxn.mybluehost.me:8000/api/";
-    Map<String, String> params ;//= new HashMap<>();
-    private int requestMethod;
-    private String serverAddress;
+    private static RequestQueue mRequestQueue;
     private Context context;
 
-    private OnResponseListner onResponseListner;
-    private OnErrorListner onErrorListner;
-
-    public ServerConnector(String serverAddress,Map<String, String> params ,int requestMethod,Context context){
-        this.serverAddress=serverAddress;
-        this.params=params;
-        this.requestMethod=requestMethod;
+    private ServerConnector(Context context){
         this.context=context;
+        mRequestQueue = Volley.newRequestQueue(context);
     }
-    public void sendRequest(){
+
+    public static synchronized ServerConnector getInstance(Context context){
+        if (serverConnector==null)
+            serverConnector=new ServerConnector(context);
+
+        return serverConnector;
+    }
+
+    public synchronized void sendRequest(String serverAddress,Map<String, String> params ,int requestMethod,OnResponseListner onResponseListner,OnErrorListner onErrorListner,String tag){
         StringRequest postRequest = new StringRequest(requestMethod/* Request.Method.POST */, serverAddress,
                 new Response.Listener<String>() {
                     @Override
@@ -110,15 +115,15 @@ public class ServerConnector {
                 return parameater;
             }
         };
-        Volley.newRequestQueue(context).add(postRequest);
-    }
-    public void setOnReponseListner(OnResponseListner onResponseListner){
-        if(onResponseListner!=null)
-            this.onResponseListner=onResponseListner;
+        postRequest.setTag(tag);
+        postRequest.setRetryPolicy(new DefaultRetryPolicy(
+                0,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        mRequestQueue.add(postRequest);
     }
 
-    public void setOnErrorListner(OnErrorListner onErrorListner){
-        if(onErrorListner!=null)
-            this.onErrorListner=onErrorListner;
+    public void cancelRequest(String tag){
+        mRequestQueue.cancelAll(tag);
     }
 }

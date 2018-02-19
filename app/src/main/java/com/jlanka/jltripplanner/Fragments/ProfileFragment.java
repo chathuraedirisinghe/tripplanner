@@ -151,7 +151,7 @@ public class ProfileFragment extends Fragment {
                         if (!v_reg.isEmpty()){
                             if(!v_in.isEmpty()){
                                 if (!v_model.isEmpty()){
-                                    if (!v_year.isEmpty()){
+                                    if (!v_year.isEmpty() || v_year.length()!=4){
                                         sendData(new Vehicle(user_id,v_reg,v_in,v_model,v_year));
                                     }
                                     else{
@@ -228,8 +228,9 @@ public class ProfileFragment extends Fragment {
         params.put("model", modal);
         params.put("year", year);
 
-        ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+"electric_vehicles/",params, Request.Method.POST,getActivity());
-        serverConnector.setOnReponseListner(new OnResponseListner() {
+        ServerConnector.getInstance(getActivity()).cancelRequest("SendVehicleData");
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+"electric_vehicles/",params, Request.Method.POST,
+        new OnResponseListner() {
             @Override
             public void onResponse(String response) {
                 Log.w("User Details : ", String.valueOf(response));
@@ -246,9 +247,9 @@ public class ProfileFragment extends Fragment {
                 }
 
             }
-        });
+        },
 
-        serverConnector.setOnErrorListner(new OnErrorListner() {
+        new OnErrorListner() {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
             public void onError(String error, JSONObject obj) {
@@ -281,9 +282,7 @@ public class ProfileFragment extends Fragment {
                 }
                 catch (Exception e){e.printStackTrace();}
             }
-        });
-        serverConnector.sendRequest();
-
+        },"SendVehicleData");
     }
 
 }

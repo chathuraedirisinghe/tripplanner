@@ -168,8 +168,9 @@ public class SettingsFragment extends Fragment {
         params.put("password", old_password);
         params.put("new_password", new_password);
 
-        ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+"ev_owners/change_password/",params, Request.Method.POST,getActivity());
-        serverConnector.setOnReponseListner(new OnResponseListner() {
+        ServerConnector.getInstance(getActivity()).cancelRequest("ChangePassword");
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+"ev_owners/change_password/",params, Request.Method.POST,
+        new OnResponseListner() {
             @Override
             public void onResponse(String response) {
                 Log.w("User Details : ", String.valueOf(response));
@@ -197,9 +198,9 @@ public class SettingsFragment extends Fragment {
                     tv_message.setText("Unable to Change PIN.");
                 }
             }
-        });
+        },
 
-        serverConnector.setOnErrorListner(new OnErrorListner() {
+        new OnErrorListner() {
             @Override
             public void onError(String error, JSONObject obj) {
                 if (obj!=null)
@@ -209,7 +210,6 @@ public class SettingsFragment extends Fragment {
                 tv_message.setVisibility(View.VISIBLE);
                 tv_message.setText(error);
             }
-        });
-        serverConnector.sendRequest();
+        },"ChangePassword");
     }
 }

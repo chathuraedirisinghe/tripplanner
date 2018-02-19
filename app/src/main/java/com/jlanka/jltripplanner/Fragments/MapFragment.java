@@ -15,7 +15,6 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomSheetBehavior;
@@ -23,17 +22,12 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
-import android.transition.ArcMotion;
 import android.util.Log;
 import android.util.TypedValue;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AnimationUtils;
-import android.view.animation.Interpolator;
-import android.view.animation.TranslateAnimation;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -82,7 +76,6 @@ import butterknife.BindString;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-import com.jlanka.jltripplanner.DataLoader;
 import com.jlanka.jltripplanner.GeofenceMonitor;
 import com.jlanka.jltripplanner.GoogleAnalyticsService;
 import com.jlanka.jltripplanner.LocationMonitor;
@@ -202,7 +195,7 @@ public class MapFragment extends Fragment implements
         user_mobile = user.get(SessionManager.user_mobile);
         user_pin = user.get(SessionManager.pass_word);
 //        getProfileData(user_mobile);
-        getCredit(user_mobile);
+        //getCredit(user_mobile);
         if(session.isLoggedIn()) {
             addStateSubscriber();
         }
@@ -279,13 +272,12 @@ public class MapFragment extends Fragment implements
                 dialog.setCancelable(true);
                 dialog.setCanceledOnTouchOutside(true);
                 dialog.show();
-                Handler h = new Handler();
-                h.postDelayed(new Runnable() {
+                legend.setOnClickListener(new View.OnClickListener() {
                     @Override
-                    public void run() {
+                    public void onClick(View v) {
                         dialog.dismiss();
                     }
-                },10000);
+                });
             }
         });
 
@@ -416,14 +408,23 @@ public class MapFragment extends Fragment implements
 
                 switch (charger_available){
                     case "Available":
+                        _chargenow_btn.setEnabled(true);
+                        _chargenow_btn.setAlpha(1f);
                         _charger_icon.setImageBitmap(getMarkerIcon(charger_type, "Available"));
                         break;
                     case "Busy":
                         _chargenow_btn.setEnabled(false);
+                        _chargenow_btn.setAlpha(0.75f);
                         _charger_icon.setImageBitmap(getMarkerIcon(charger_type,"Busy" ));
+                        break;
+                    case "Pending...":
+                        _chargenow_btn.setEnabled(false);
+                        _chargenow_btn.setAlpha(0.75f);
+                        _charger_icon.setImageBitmap(getMarkerIcon(charger_type,"NA" ));
                         break;
                     case "NA":
                         _chargenow_btn.setEnabled(false);
+                        _chargenow_btn.setAlpha(0.75f);
                         _charger_icon.setImageBitmap(getMarkerIcon(charger_type,"NA" ));
                         break;
                 }
@@ -432,7 +433,7 @@ public class MapFragment extends Fragment implements
                     setCharging();
                 }
 
-                collapseBottomSheet();
+                //collapseBottomSheet();
                 if (behavior.getState() == BottomSheetBehavior.STATE_COLLAPSED) {
                     expandBottomSheet();
                 }
@@ -562,8 +563,8 @@ public class MapFragment extends Fragment implements
     public void getResponse(final double lat, final double lng){
         String charging_address = "charging_stations/";
 
-        ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+charging_address,null,Request.Method.GET,getActivity());
-        serverConnector.setOnReponseListner(new OnResponseListner() {
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+charging_address,null,Request.Method.GET,
+        new OnResponseListner() {
             @Override
             public void onResponse(String response) {
                 Log.w("Stations Details  : ", String.valueOf(response));
@@ -582,16 +583,15 @@ public class MapFragment extends Fragment implements
                         }
 
             }
-        });
-        serverConnector.setOnErrorListner(new OnErrorListner() {
+        }
+        ,new OnErrorListner() {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onError(String error, JSONObject obj) {
                 System.out.println("SERVER RESPONSE : " + error);
                 showDialog("Timeout","Check your internet connection","getResponse",new Double[]{lat,lng},true);
             }
-        });
-        serverConnector.sendRequest();
+        },"ChargingStations");
     }
 
     @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
@@ -603,24 +603,27 @@ public class MapFragment extends Fragment implements
                     if (!destinationSet)
                         mGoogleMap.clear();
 
-                    ArrayList<Marker> markers = new ArrayList<>();
-                    for (int i = 0; i < stations_object.length(); i++) {
-                        JSONObject charger = stations_object.getJSONObject(i);
-                        System.out.println("Charger Status : "+charger.getString("availability")+" , Charger Type : "+charger.getString("charger_type"));
 
-                        chargerMarker = mGoogleMap.addMarker(new MarkerOptions()
-                                .title(charger.getString("device_id"))
-                                .snippet(charger.getString("location"))
-                                .icon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon(charger.getString("charger_type").toString(),
-                                        charger.getString("availability").toString())))
-                                .position(new LatLng(
-                                        charger.getDouble("lat"),
-                                        charger.getDouble("lng")
-                                ))
-                        );
-                        //---------------------------Thiwanka----------------------------
-                        chargerMarker.setTag("Charger_Marker");
-                        markers.add(chargerMarker);
+                    ArrayList<Marker> markers = new ArrayList<>();
+                    if (mGoogleMap.getCameraPosition().zoom>5) {
+                        for (int i = 0; i < stations_object.length(); i++) {
+                            JSONObject charger = stations_object.getJSONObject(i);
+                            System.out.println("Charger Status : " + charger.getString("availability") + " , Charger Type : " + charger.getString("charger_type"));
+
+                            chargerMarker = mGoogleMap.addMarker(new MarkerOptions()
+                                    .title(charger.getString("device_id"))
+                                    .snippet(charger.getString("location"))
+                                    .icon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon(charger.getString("charger_type").toString(),
+                                            charger.getString("availability").toString())))
+                                    .position(new LatLng(
+                                            charger.getDouble("lat"),
+                                            charger.getDouble("lng")
+                                    ))
+                            );
+                            //---------------------------Thiwanka----------------------------
+                            chargerMarker.setTag("Charger_Marker");
+                            markers.add(chargerMarker);
+                        }
                     }
 
                     //---------------------------Thiwanka----------------------------
@@ -645,6 +648,7 @@ public class MapFragment extends Fragment implements
             for(int i=0; i < stations_object.length();i++){
                 JSONObject charger_array = stations_object.getJSONObject(i);
                 final String charger_id = charger_array.getString("device_id").toLowerCase();
+                charger_array.put("availability","Pending...");
                 Log.e("Charger ID",charger_id);
                 startMqtt(charger_id);
             }
@@ -735,6 +739,7 @@ public class MapFragment extends Fragment implements
         }
 //        session.user_charging_station(null);
         _chargenow_btn.setEnabled(true);
+        _chargenow_btn.setAlpha(1f);
         _imageView.setVisibility(View.GONE);
         _charging_station.setVisibility(View.GONE);
         _chargenow_btn.setVisibility(View.VISIBLE);
@@ -748,6 +753,7 @@ public class MapFragment extends Fragment implements
         }
 
         _chargenow_btn.setEnabled(true);
+        _chargenow_btn.setAlpha(1f);
         AlertDialog dialog =new AlertDialog.Builder(getActivity()).create();
         dialog.setTitle("Error...");
         dialog.setMessage(s.toString());
@@ -985,7 +991,7 @@ public class MapFragment extends Fragment implements
 
     private void getAddressSuggestions(final String query){
         //Cancel previous requests
-        DataLoader.getInstance(getActivity().getApplicationContext()).cancelRequest("Address_Suggestion_Requests");
+        ServerConnector.getInstance(getActivity()).cancelRequest("Address_Suggestion_Requests");
 
         fsv.showProgress();
         StringBuilder url = new StringBuilder(PLACES_API_BASE);
@@ -997,54 +1003,52 @@ public class MapFragment extends Fragment implements
             e.printStackTrace();
         }
 
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, url.toString(),new Response.Listener<String>() {
-            @RequiresApi(api = Build.VERSION_CODES.M)
-            @Override
-            public void onResponse(String response) {
-                JSONObject jsonResults;
-                ArrayList<FoundSuggestion> resultList=null;
-                if (response.equals("[]")) {
-
-                } else {
-
-                    try {
-                        // Log.d(TAG, jsonResults.toString());
-                        jsonResults = new JSONObject(response);
-                        // Create a JSON object hierarchy from the results
-                        JSONObject jsonObj = new JSONObject(jsonResults.toString());
-                        JSONArray predsJsonArray = jsonObj.getJSONArray("predictions");
-
-                        // Extract the Place descriptions from the results
-                        if (predsJsonArray != null) {
-                            resultList = new ArrayList<FoundSuggestion>(predsJsonArray.length());
-                            for (int i = 0; i < predsJsonArray.length(); i++) {
-                                FoundSuggestion fs = new FoundSuggestion(predsJsonArray.getJSONObject(i).getString("place_id"), predsJsonArray.getJSONObject(i).getString("description").replace(", Sri Lanka",""));
-                                resultList.add(fs);
-                            }
-                        }
-                        fsv.hideProgress();
-                        fsv.swapSuggestions(resultList);
-                    } catch (JSONException e) {
-                        // TODO Auto-generated catch block
-                        fsv.hideProgress();
-                        showDialog("Timeout","Check Your internet connection...","getAddressSuggestions",new Object[]{query},false);
-                        e.printStackTrace();
-                    }
-                }
-            }
-        },
-                new Response.ErrorListener() {
+        ServerConnector.getInstance(getActivity()).sendRequest(url.toString(), null, Request.Method.POST,
+                new OnResponseListner() {
                     @RequiresApi(api = Build.VERSION_CODES.M)
                     @Override
-                    public void onErrorResponse(VolleyError error) {
+                    public void onResponse(String response) {
+                        JSONObject jsonResults;
+                        ArrayList<FoundSuggestion> resultList = null;
+                        if (response.equals("[]")) {
+
+                        } else {
+
+                            try {
+                                // Log.d(TAG, jsonResults.toString());
+                                jsonResults = new JSONObject(response);
+                                // Create a JSON object hierarchy from the results
+                                JSONObject jsonObj = new JSONObject(jsonResults.toString());
+                                JSONArray predsJsonArray = jsonObj.getJSONArray("predictions");
+
+                                // Extract the Place descriptions from the results
+                                if (predsJsonArray != null) {
+                                    resultList = new ArrayList<FoundSuggestion>(predsJsonArray.length());
+                                    for (int i = 0; i < predsJsonArray.length(); i++) {
+                                        FoundSuggestion fs = new FoundSuggestion(predsJsonArray.getJSONObject(i).getString("place_id"), predsJsonArray.getJSONObject(i).getString("description").replace(", Sri Lanka", ""));
+                                        resultList.add(fs);
+                                    }
+                                }
+                                fsv.hideProgress();
+                                fsv.swapSuggestions(resultList);
+                            } catch (JSONException e) {
+                                // TODO Auto-generated catch block
+                                fsv.hideProgress();
+                                showDialog("Timeout", "Check Your internet connection...", "getAddressSuggestions", new Object[]{query}, false);
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                },
+                new OnErrorListner() {
+                    @RequiresApi(api = Build.VERSION_CODES.M)
+                    @Override
+                    public void onError(String error, JSONObject obj) {
                         fsv.hideProgress();
                         Log.d("Error   ", String.valueOf(error));
-                        DataLoader.getInstance(getActivity().getApplicationContext()).cancelRequest("Address_Suggestion_Requests");
                         showDialog("Timeout","Check Your internet connection...","getAddressSuggestions",new Object[]{query},false);
                     }
-                });
-        stringRequest.setTag("Address_Suggestion_Requests");
-        DataLoader.getInstance(getActivity().getApplicationContext()).addToRequestQueue(stringRequest);
+                },"Address_Suggestion_Requests");
     }
 
     private void searchLocationByName(final String query){
@@ -1053,7 +1057,7 @@ public class MapFragment extends Fragment implements
         removeGeofences();
 
         //Cancel previous requests
-        DataLoader.getInstance(getActivity().getApplicationContext()).cancelRequest("Location_Search_Requests");
+        ServerConnector.getInstance(getActivity()).cancelRequest("Location_Search_Requests");
 
         StringBuilder url = new StringBuilder(MAPS_API_BASE);
         try {
@@ -1064,52 +1068,50 @@ public class MapFragment extends Fragment implements
             e.printStackTrace();
         }
 
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, url.toString(),new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                if (response.equals("[]")) {
+        ServerConnector.getInstance(getActivity().getApplicationContext()).sendRequest(url.toString(), null, Request.Method.POST,
+            new OnResponseListner() {
+                @Override
+                public void onResponse(String response) {
+                    if (response.equals("[]")) {
 
-                } else {
-                    try {
-                        // Create a JSON object hierarchy from the results
-                        JSONObject jsonObj = new JSONObject(response);
-                        JSONArray geoResJsonArray = jsonObj.getJSONArray("results");
-                        // Extract the LatLng from the results
-                        if (geoResJsonArray!=null) {
-                            String address = geoResJsonArray.getJSONObject(0).getString("formatted_address").replace(", Sri Lanka","");
-                            JSONObject geo=geoResJsonArray.getJSONObject(0).getJSONObject("geometry");
-                            JSONObject LatLngObj=geo.getJSONObject("location");
-                            Double lat=LatLngObj.getDouble("lat");
-                            Double lng=LatLngObj.getDouble("lng");
-                            addDestinationMarker(new LatLng(Double.parseDouble(lat.toString()),Double.parseDouble(lng.toString())),address);
-                            showDestinationSet();
-                            zoomToLocation(destinatonMarker.getPosition(),17,0);
-                            fabNav.hide();
-                            fabEnd.hide();
-                            fabRoute.show();
+                    } else {
+                        try {
+                            // Create a JSON object hierarchy from the results
+                            JSONObject jsonObj = new JSONObject(response);
+                            JSONArray geoResJsonArray = jsonObj.getJSONArray("results");
+                            // Extract the LatLng from the results
+                            if (geoResJsonArray != null) {
+                                String address = geoResJsonArray.getJSONObject(0).getString("formatted_address").replace(", Sri Lanka", "");
+                                JSONObject geo = geoResJsonArray.getJSONObject(0).getJSONObject("geometry");
+                                JSONObject LatLngObj = geo.getJSONObject("location");
+                                Double lat = LatLngObj.getDouble("lat");
+                                Double lng = LatLngObj.getDouble("lng");
+                                addDestinationMarker(new LatLng(Double.parseDouble(lat.toString()), Double.parseDouble(lng.toString())), address);
+                                showDestinationSet();
+                                zoomToLocation(destinatonMarker.getPosition(), 17, 0);
+                                fabNav.hide();
+                                fabEnd.hide();
+                                fabRoute.show();
+                            }
+                            hideProgress();
+                        } catch (JSONException e) {
+                            // TODO Auto-generated catch block
+                            hideProgress();
+                            e.printStackTrace();
                         }
-                        hideProgress();
-                    } catch (JSONException e) {
-                        // TODO Auto-generated catch block
-                        hideProgress();
-                        e.printStackTrace();
                     }
-                }
 
-            }
-        },
-                new Response.ErrorListener() {
-                    @RequiresApi(api = Build.VERSION_CODES.M)
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        hideProgress();
-                        Log.d("Error   ", String.valueOf(error));
-                        DataLoader.getInstance(getActivity().getApplicationContext()).cancelRequest("Location_Search_Requests");
-                        showDialog("Timeout","Check Your internet connection..","searchLocationByName",new Object[]{query},false);
-                    }
-                });
-        stringRequest.setTag("Location_Search_Requests");
-        DataLoader.getInstance(getActivity().getApplicationContext()).addToRequestQueue(stringRequest);
+                }
+            },
+            new OnErrorListner() {
+                @RequiresApi(api = Build.VERSION_CODES.M)
+                @Override
+                public void onError(String error, JSONObject obj) {
+                    hideProgress();
+                    Log.d("Error   ", String.valueOf(error));
+                    showDialog("Timeout","Check Your internet connection..","searchLocationByName",new Object[]{query},false);
+                }
+            },"Location_Search_Requests");
     }
 
     private void zoomToLocation(LatLng location,int zoom,float bearing){
@@ -1182,8 +1184,9 @@ public class MapFragment extends Fragment implements
         params.put("battery_remaining", perc);
         //params.put("electric_vehicles","[]");
 
-        ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+"feasible_directions",params,Request.Method.POST,getActivity().getApplicationContext());
-        serverConnector.setOnReponseListner(new OnResponseListner() {
+        ServerConnector.getInstance(getActivity()).cancelRequest("CheckRoute");
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+"feasible_directions",params,Request.Method.POST,
+        new OnResponseListner() {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onResponse(String response) {
@@ -1225,22 +1228,20 @@ public class MapFragment extends Fragment implements
                 }
 
             }
-        });
-
-        serverConnector.setOnErrorListner(new OnErrorListner() {
+        },
+        new OnErrorListner() {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onError(String error, JSONObject obj) {
                 showDialog("Routing Error", error, "checkRoute",
                         new Object[]{vin, start, end, capacity, perc}, false);
             }
-        });
-        serverConnector.sendRequest();
+        },"CheckRoute");
     }
 
     private void route(final LatLng start, final LatLng end, final ArrayList<LatLng> chargerLocations){
         //Cancel previous requests
-        DataLoader.getInstance(getActivity().getApplicationContext()).cancelRequest("Route");
+        ServerConnector.getInstance(getActivity()).cancelRequest("Route");
         removeGeofences();
 
         System.out.println(start+","+end +chargerLocations);
@@ -1270,137 +1271,134 @@ public class MapFragment extends Fragment implements
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, url,new Response.Listener<String>() {
-            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-            @Override
-            public void onResponse(final String response) {
-                if (response.equals("[]")) {
-                    System.out.println("ERROR");
-                } else {
-                    try {
-                        JSONArray jsonLegs;
-                        routes=new ArrayList<>();
-                        routeLines = new ArrayList<>();
-                        circles=new ArrayList<>();
-                        // Create a JSON object hierarchy from the results
-                        JSONObject responseObject = new JSONObject(response);
-                        JSONArray routesArray=responseObject.getJSONArray("routes");
-                        for(int i=0;i<routesArray.length();i++){
-                            jsonLegs = routesArray.getJSONObject(i).getJSONArray("legs");
-                            Route route=new Route(start,end,jsonLegs,chargerLocations);
-                            routes.add(route);
-                        }
+        ServerConnector.getInstance(getActivity()).sendRequest(url, null, Request.Method.POST,
+                new OnResponseListner() {
+                    @Override
+                    public void onResponse(String response) {
+                        if (response.equals("[]")) {
+                            System.out.println("ERROR");
+                        } else {
+                            try {
+                                JSONArray jsonLegs;
+                                routes = new ArrayList<>();
+                                routeLines = new ArrayList<>();
+                                circles = new ArrayList<>();
+                                // Create a JSON object hierarchy from the results
+                                JSONObject responseObject = new JSONObject(response);
+                                JSONArray routesArray = responseObject.getJSONArray("routes");
+                                for (int i = 0; i < routesArray.length(); i++) {
+                                    jsonLegs = routesArray.getJSONObject(i).getJSONArray("legs");
+                                    Route route = new Route(start, end, jsonLegs, chargerLocations);
+                                    routes.add(route);
+                                }
 
-                        infoMarkers=new ArrayList<>();
-                        final LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                        builder.include(start);
-                        getActivity().runOnUiThread(
-                                new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        int size=routes.size();
-                                        if (size>2)
-                                            size=2;
+                                infoMarkers = new ArrayList<>();
+                                final LatLngBounds.Builder builder = new LatLngBounds.Builder();
+                                builder.include(start);
+                                getActivity().runOnUiThread(
+                                        new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                int size = routes.size();
+                                                if (size > 2)
+                                                    size = 2;
 
-                                        for (int i = 0; i < size; i++) {
-                                            List<List<HashMap<String, String>>> result = parse(routes.get(i).getRoute());
-                                            ArrayList<LatLng> points;
-                                            PolylineOptions lineOptions = null;
+                                                for (int i = 0; i < size; i++) {
+                                                    List<List<HashMap<String, String>>> result = parse(routes.get(i).getRoute());
+                                                    ArrayList<LatLng> points;
+                                                    PolylineOptions lineOptions = null;
 
-                                            // Traversing through all the routes
-                                            for (int p = 0; p < result.size(); p++) {
-                                                points = new ArrayList<LatLng>();
-                                                lineOptions = new PolylineOptions();
+                                                    // Traversing through all the routes
+                                                    for (int p = 0; p < result.size(); p++) {
+                                                        points = new ArrayList<LatLng>();
+                                                        lineOptions = new PolylineOptions();
 
-                                                // Fetching i-th route
-                                                List<HashMap<String, String>> path = result.get(p);
+                                                        // Fetching i-th route
+                                                        List<HashMap<String, String>> path = result.get(p);
 
-                                                // Fetching all the points in i-th route
-                                                for (int j = 0; j < path.size(); j++) {
-                                                    HashMap<String, String> point = path.get(j);
+                                                        // Fetching all the points in i-th route
+                                                        for (int j = 0; j < path.size(); j++) {
+                                                            HashMap<String, String> point = path.get(j);
 
-                                                    double lat = Double.parseDouble(point.get("lat"));
-                                                    double lng = Double.parseDouble(point.get("lng"));
-                                                    LatLng position = new LatLng(lat, lng);
-                                                    points.add(position);
-                                                    builder.include(position);
+                                                            double lat = Double.parseDouble(point.get("lat"));
+                                                            double lng = Double.parseDouble(point.get("lng"));
+                                                            LatLng position = new LatLng(lat, lng);
+                                                            points.add(position);
+                                                            builder.include(position);
+                                                        }
+
+                                                        // Adding all the points in the route to LineOptions
+                                                        lineOptions.addAll(points);
+                                                        lineOptions.width(15);
+                                                    }
+
+                                                    TextView text = new TextView(getActivity().getApplicationContext());
+                                                    IconGenerator generator = new IconGenerator(getActivity().getApplicationContext());
+
+                                                    if (i == 0) {
+                                                        lineOptions.color(Color.argb(250, 69, 151, 255));
+                                                        lineOptions.zIndex(2l);
+
+                                                        text.setTextColor(Color.WHITE);
+                                                        generator.setBackground(getActivity().getApplicationContext().getDrawable(R.drawable.ideal_route_info));
+
+                                                        int mid = lineOptions.getPoints().size() / 2;
+                                                        LatLng latLng = lineOptions.getPoints().get(mid);
+
+                                                        text.setText(routes.get(i).getDurationString());
+
+                                                        generator.setContentView(text);
+                                                        Bitmap icon = generator.makeIcon();
+
+                                                        MarkerOptions tp = new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(icon));
+                                                        Marker m = mGoogleMap.addMarker(tp);
+                                                        m.setTag("Polyline_InfoWindow");
+                                                        infoMarkers.add(m);
+                                                    } else {
+                                                        lineOptions.color(Color.argb(250, 176, 189, 197));
+                                                        // Drawing polyline in the Google Map for the i-th route
+                                                        lineOptions.zIndex(1l);
+                                                    }
+                                                    // Drawing polyline in the Google Map for the i-th route
+                                                    routeLines.add(mGoogleMap.addPolyline(lineOptions));
                                                 }
-
-                                                // Adding all the points in the route to LineOptions
-                                                lineOptions.addAll(points);
-                                                lineOptions.width(15);
                                             }
-
-                                            TextView text = new TextView(getActivity().getApplicationContext());
-                                            IconGenerator generator = new IconGenerator(getActivity().getApplicationContext());
-
-                                            if (i == 0) {
-                                                lineOptions.color(Color.argb(250, 69, 151, 255));
-                                                lineOptions.zIndex(2l);
-
-                                                text.setTextColor(Color.WHITE);
-                                                generator.setBackground(getActivity().getApplicationContext().getDrawable(R.drawable.ideal_route_info));
-
-                                                int mid = lineOptions.getPoints().size() / 2;
-                                                LatLng latLng = lineOptions.getPoints().get(mid);
-
-                                                text.setText(routes.get(i).getDurationString());
-
-                                                generator.setContentView(text);
-                                                Bitmap icon = generator.makeIcon();
-
-                                                MarkerOptions tp = new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(icon));
-                                                Marker m = mGoogleMap.addMarker(tp);
-                                                m.setTag("Polyline_InfoWindow");
-                                                infoMarkers.add(m);
-                                            } else {
-                                                lineOptions.color(Color.argb(250, 176, 189, 197));
-                                                // Drawing polyline in the Google Map for the i-th route
-                                                lineOptions.zIndex(1l);
-                                            }
-                                            // Drawing polyline in the Google Map for the i-th route
-                                            routeLines.add(mGoogleMap.addPolyline(lineOptions));
-                                        }
-                                    }
-                                });
+                                        });
 
 
-                        //adding geofence
-                        if (!chargerLocations.isEmpty()) {
-                            for(LatLng charger:chargerLocations)
-                                createGeofence(charger, "Charger_Location");
+                                //adding geofence
+                                if (!chargerLocations.isEmpty()) {
+                                    for (LatLng charger : chargerLocations)
+                                        createGeofence(charger, "Charger_Location");
+                                }
+                                //createGeofence(end,"Destination");
+
+                                LatLngBounds bounds = builder.build();
+                                int padding = 100; // offset from edges of the map in pixels
+                                CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
+                                mGoogleMap.animateCamera(cu);
+
+                                fabNav.show();
+                                fabEnd.show();
+                                fabRoute.hide();
+                                hideProgress();
+                            } catch (Exception e) {
+                                // TODO Auto-generated catch block
+                                hideProgress();
+                                e.printStackTrace();
+                            }
                         }
-                        //createGeofence(end,"Destination");
-
-                        LatLngBounds bounds = builder.build();
-                        int padding = 100; // offset from edges of the map in pixels
-                        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
-                        mGoogleMap.animateCamera(cu);
-
-                        fabNav.show();
-                        fabEnd.show();
-                        fabRoute.hide();
-                        hideProgress();
-                    } catch (Exception e) {
-                        // TODO Auto-generated catch block
-                        hideProgress();
-                        e.printStackTrace();
                     }
-                }
-            }
-        },
-                new Response.ErrorListener() {
+                },
+                new OnErrorListner() {
                     @RequiresApi(api = Build.VERSION_CODES.M)
                     @Override
-                    public void onErrorResponse(VolleyError error) {
+                    public void onError(String error, JSONObject obj) {
                         hideProgress();
-                        error.printStackTrace();
-                        DataLoader.getInstance(getActivity().getApplicationContext()).cancelRequest("Route");
+                        System.out.println(error);
                         showDialog("Timeout","Check Your internet connection...","route",null,false);
                     }
-                });
-        stringRequest.setTag("Route");
-        DataLoader.getInstance(getActivity().getApplicationContext()).addToRequestQueue(stringRequest);
+                },"Route");
     }
 
     private void removeDestinationMarker(){
@@ -1432,7 +1430,7 @@ public class MapFragment extends Fragment implements
         removeGeofences();
 
         //Cancel previous requests
-        DataLoader.getInstance(getActivity().getApplicationContext()).cancelRequest("Address_From_Location");
+        ServerConnector.getInstance(getActivity()).cancelRequest("Address_From_Location");
 
         StringBuilder url = new StringBuilder(MAPS_API_BASE);
         try {
@@ -1442,53 +1440,50 @@ public class MapFragment extends Fragment implements
             e.printStackTrace();
         }
 
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, url.toString(),new Response.Listener<String>() {
-            @RequiresApi(api = Build.VERSION_CODES.M)
-            @Override
-            public void onResponse(String response) {
-                JSONObject jsonResults;
-                if (response.equals("[]")) {
-
-                } else {
-                    try {
-                        // Create a JSON object hierarchy from the results
-                        JSONObject jsonObj = new JSONObject(response);
-                        JSONArray goeResJsonArray = jsonObj.getJSONArray("results");
-
-                        // Extract the LatLng from the results
-                        if (goeResJsonArray!=null && goeResJsonArray.length()>0) {
-                            String address = goeResJsonArray.getJSONObject(0).getString("formatted_address").replace(", Sri Lanka","");
-
-                            addDestinationMarker(location,address);
-                            destinatonMarker.showInfoWindow();
-                            showDestinationSet();
-                            fabNav.hide();
-                            fabEnd.hide();
-                            fabRoute.show();
-                        }
-                        hideProgress();
-                    } catch (JSONException e) {
-                        // TODO Auto-generated catch block
-                        hideProgress();
-                        showDialog("Timeout","Check Your internet connection...","setDestinationOnClick",new Object[]{location},false);
-                        e.printStackTrace();
-                    }
-                }
-            }
-        },
-                new Response.ErrorListener() {
+        ServerConnector.getInstance(getActivity()).sendRequest(url.toString(), null, Request.Method.POST,
+                new OnResponseListner() {
                     @RequiresApi(api = Build.VERSION_CODES.M)
                     @Override
-                    public void onErrorResponse(VolleyError error) {
+                    public void onResponse(String response) {
+                        JSONObject jsonResults;
+                        if (response.equals("[]")) {
+
+                        } else {
+                            try {
+                                // Create a JSON object hierarchy from the results
+                                JSONObject jsonObj = new JSONObject(response);
+                                JSONArray goeResJsonArray = jsonObj.getJSONArray("results");
+
+                                // Extract the LatLng from the results
+                                if (goeResJsonArray != null && goeResJsonArray.length() > 0) {
+                                    String address = goeResJsonArray.getJSONObject(0).getString("formatted_address").replace(", Sri Lanka", "");
+
+                                    addDestinationMarker(location, address);
+                                    destinatonMarker.showInfoWindow();
+                                    showDestinationSet();
+                                    fabNav.hide();
+                                    fabEnd.hide();
+                                    fabRoute.show();
+                                }
+                                hideProgress();
+                            } catch (JSONException e) {
+                                // TODO Auto-generated catch block
+                                hideProgress();
+                                showDialog("Timeout", "Check Your internet connection...", "setDestinationOnClick", new Object[]{location}, false);
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                },
+                new OnErrorListner() {
+                    @RequiresApi(api = Build.VERSION_CODES.M)
+                    @Override
+                    public void onError(String error, JSONObject obj) {
                         hideProgress();
-                        error.printStackTrace();
                         removeDestinationMarker();
-                        DataLoader.getInstance(getActivity().getApplicationContext()).cancelRequest("Address_From_Location");
                         showDialog("Timeout","Check Your internet connection...","setDestinationOnClick",new Object[]{location},false);
                     }
-                });
-        stringRequest.setTag("Address_From_Location");
-        DataLoader.getInstance(getActivity().getApplicationContext()).addToRequestQueue(stringRequest);
+                },"Address_From_Location");
     }
 
     private void showProgress(String text){

@@ -69,8 +69,9 @@ public class HistoryFragment extends Fragment {
     public void getHistory(String user_id){
         String url = "ev_owners/charging_history/"+user_id+"/";
 
-        ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+url,null,Request.Method.GET,getActivity());
-        serverConnector.setOnReponseListner(new OnResponseListner() {
+        ServerConnector.getInstance(getActivity()).cancelRequest("GetChargingHistory");
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+url,null,Request.Method.GET,
+        new OnResponseListner() {
             @Override
             public void onResponse(String response) {
                 Log.w("User Details : ", String.valueOf(response));
@@ -83,9 +84,9 @@ public class HistoryFragment extends Fragment {
                 }
                 progress.dismiss();
             }
-        });
+        },
 
-        serverConnector.setOnErrorListner(new OnErrorListner() {
+        new OnErrorListner() {
             @Override
             public void onError(String error, JSONObject obj) {
                 AlertDialog alertDialog = new AlertDialog.Builder(getActivity()).create();
@@ -100,8 +101,7 @@ public class HistoryFragment extends Fragment {
                 });
                 alertDialog.show();
             }
-        });
-        serverConnector.sendRequest();
+        },"GetChargingHistory");
 
         //initialize the progress dialog and show it
         progress = new ProgressDialog(getActivity());

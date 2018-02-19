@@ -13,15 +13,16 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import com.android.volley.Request;
+
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+
 import com.jlanka.jltripplanner.R;
 
 import com.jlanka.jltripplanner.GoogleAnalyticsService;
@@ -31,7 +32,6 @@ import com.jlanka.jltripplanner.Server.ServerConnector;
 
 public class SignupActivity extends Activity {
     private static final String TAG = "SignupActivity";
-
     @BindView(R.id.input_username) EditText _username;
     @BindView(R.id.input_fname) EditText _fname;
     @BindView(R.id.input_lname) EditText _lname;
@@ -50,6 +50,7 @@ public class SignupActivity extends Activity {
         _signupButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                _signupButton.setEnabled(false);
                 signup();
             }
         });
@@ -68,10 +69,9 @@ public class SignupActivity extends Activity {
 
         if (!validate()) {
             onSignupFailed();
+            _signupButton.setEnabled(true);
             return;
         }
-
-        _signupButton.setEnabled(false);
 
         /*final ProgressDialog progressDialog = new ProgressDialog(SignupActivity.this, R.style.AppTheme);
         progressDialog.setIndeterminate(true);
@@ -119,40 +119,51 @@ public class SignupActivity extends Activity {
         params.put("password", password);
         //params.put("electric_vehicles","[]");
 
-        ServerConnector serverConnector= new ServerConnector(ServerConnector.SERVER_ADDRESS+"ev_owners/",params,Request.Method.POST,this);
-        serverConnector.setOnReponseListner(new OnResponseListner() {
-            @Override
-            public void onResponse(String response) {
-                if(pd.isShowing()){
-                    pd.dismiss();
-                }
-                try {
-                    JSONObject jsonResponse = new JSONObject(response);
-                    Log.w("Register Response   ", String.valueOf(jsonResponse));
-                    if (jsonResponse.getString("id").isEmpty()){
-                        accountCreateFailed();
-                    }else{
-                        //-----------------------Thiwanka----------------------------
-                        GoogleAnalyticsService.getInstance().setAction("User","Signup",username);
+        ServerConnector.getInstance(getApplicationContext()).cancelRequest("SignUp");
+        ServerConnector.getInstance(getApplicationContext()).sendRequest(ServerConnector.SERVER_ADDRESS+"ev_owners/",params,Request.Method.POST,
+                new OnResponseListner() {
+                    @Override
+                    public void onResponse(String response) {
 
-                        activateAccount();
+                        if(pd.isShowing()){
+                            pd.dismiss();
+                        }
+                        try {
+                            JSONObject jsonResponse = new JSONObject(response);
+                            Log.w("Register Response   ", String.valueOf(jsonResponse));
+                            if (jsonResponse.getString("id").isEmpty()){
+                                accountCreateFailed();
+                            }else{
+                                //-----------------------Thiwanka----------------------------
+                                GoogleAnalyticsService.getInstance().setAction("User","Signup",username);
+
+                                activateAccount();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                     }
+                }
+
+        ,new OnErrorListner() {
+            @Override
+            public void onError(String error, JSONObject obj) {
+                String message=error;
+                System.out.println("SERVER RESPONSE : " + error);
+                try {
+                    if (obj.has("username"))
+                        message=obj.getJSONArray("username").get(0).toString();
+                    else if (obj.has("email"))
+                        message=obj.getJSONArray("email").get(0).toString();
+                    else if (obj.has("contact_number"))
+                        message=obj.getJSONArray("contact_number").get(0).toString();
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-            }
-        });
-
-        serverConnector.setOnErrorListner(new OnErrorListner() {
-            @Override
-            public void onError(String error, JSONObject obj) {
-                System.out.println("SERVER RESPONSE : " + error);
-                if (obj!=null)
-                    System.out.println("SERVER RESPONSE OBJ : " + obj.toString());
 
                 AlertDialog alertDialog = new AlertDialog.Builder(SignupActivity.this).create();
                 alertDialog.setTitle("Sorry");
-                alertDialog.setMessage(error);
+                alertDialog.setMessage(message);
                 alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
@@ -162,8 +173,7 @@ public class SignupActivity extends Activity {
                 });
                 alertDialog.show();
             }
-        });
-        serverConnector.sendRequest();
+        },"SignUp");
     }
 
     private void smsFailedAlert() {
@@ -210,7 +220,6 @@ public class SignupActivity extends Activity {
                     public void onClick(DialogInterface dialog, int which) {
                         if(dialog2!=null && dialog2.isShowing()){
                             dialog2.dismiss();
-                            _signupButton.setEnabled(true);
                             Intent myIntent = new Intent(getApplicationContext(), LoginActivity.class);
                             startActivity(myIntent);
                         }

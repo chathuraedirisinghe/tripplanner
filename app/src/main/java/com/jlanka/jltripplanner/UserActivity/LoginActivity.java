@@ -21,6 +21,8 @@ import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+
+import com.jlanka.jltripplanner.GoogleAnalyticsService;
 import com.jlanka.jltripplanner.MainActivity;
 import com.jlanka.jltripplanner.NetworkUtil;
 import com.jlanka.jltripplanner.R;
@@ -114,7 +116,6 @@ public class LoginActivity extends AppCompatActivity {
         String password = _passwordText.getText().toString();
 
         // TODO: Implement--> Get Data from Database.
-
         getServerResponse(username,password);
         System.out.println("USERNAME : " +username+ "    Password : "+password);
 
@@ -197,6 +198,7 @@ public class LoginActivity extends AppCompatActivity {
                     String id = jsonResponse.getString("id");
 
                     if(error.equals("0")){
+                        GoogleAnalyticsService.getInstance().setUser(username,"Login");
                         getUserDetails(id, password);
 
                     } else if(error.equals("1") && (status.contains("verify"))){

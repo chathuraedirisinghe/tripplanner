@@ -245,29 +245,22 @@ public class VehicleFragment extends Fragment {
                 JSONArray vin=null;
                 String message=null;
                 try {
-                    reg = obj.getJSONArray("reg_no");
-                }
-                catch (Exception e) {
-                }
-
-                try {
-                    vin = obj.getJSONArray("vin");
-                }
-                catch (Exception e) {
-                }
-
-                try {
-                    if (reg != null)
+                    if (obj.has("reg_no")) {
+                        reg = obj.getJSONArray("reg_no");
                         message = reg.get(0).toString().substring(0, 1).toUpperCase() + reg.get(0).toString().substring(1);
-                    else if ( vin != null)
+                    }
+                    else if (obj.has("vin")) {
+                        vin = obj.getJSONArray("vin");
                         message = vin.get(0).toString().substring(0, 1).toUpperCase() + vin.get(0).toString().substring(1);
-                    else if (message==null)
+                    }
+                    else
                         message=error;
-
-                    tv_message.setText(message);
-                    tv_message.setVisibility(View.VISIBLE);
                 }
-                catch (Exception e){e.printStackTrace();}
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+                tv_message.setText(message);
+                tv_message.setVisibility(View.VISIBLE);
             }
         });
         serverConnector.sendRequest();

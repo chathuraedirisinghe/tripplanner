@@ -15,6 +15,7 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomSheetBehavior;
@@ -25,12 +26,14 @@ import android.support.v7.app.AlertDialog;
 import android.transition.ArcMotion;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Interpolator;
+import android.view.animation.TranslateAnimation;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -121,6 +124,7 @@ public class MapFragment extends Fragment implements
     String selectedMarker;
 
     //--------------Thiwanka--------------
+    public static boolean routed;
     private static Marker destinatonMarker;
     private static MapFragment mapFragment;
 
@@ -180,7 +184,6 @@ public class MapFragment extends Fragment implements
     @BindView(R.id.fabNav) FloatingActionButton fabNav;
     @BindView(R.id.fabEnd) FloatingActionButton fabEnd;
     @BindView(R.id.floating_search_view) FloatingSearchView fsv;
-    @BindView(R.id.legendView) ImageView legendView;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -262,11 +265,27 @@ public class MapFragment extends Fragment implements
         //----------------------Thiwanka--------------------------------------
         GoogleAnalyticsService.getInstance().setScreenName(this.getClass().getSimpleName());
         chargers=new ArrayList<>();
+
+        fabLegend.setAlpha(0.75f);
         fabLegend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                getCurrentLocation();
-                showLegend();
+                LayoutInflater li = LayoutInflater.from(getActivity());
+                View legend = li.inflate(R.layout.fragment_legend, null);
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                builder.setView(legend);
+                AlertDialog dialog = builder.create();
+                dialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation; //style id
+                dialog.setCancelable(true);
+                dialog.setCanceledOnTouchOutside(true);
+                dialog.show();
+                Handler h = new Handler();
+                h.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        dialog.dismiss();
+                    }
+                },10000);
             }
         });
 
@@ -296,7 +315,6 @@ public class MapFragment extends Fragment implements
                 fabEnd.hide();
                 fabNav.hide();
                 fabRoute.hide();
-                mGoogleMap.getUiSettings().setAllGesturesEnabled(true);
             }
         });
 
@@ -380,7 +398,6 @@ public class MapFragment extends Fragment implements
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        hideLegend();
         if (marker.getTag().equals("Charger_Marker")) {
             selectedMarker = marker.getTitle();
             selectedMarker_latLng = marker.getPosition();
@@ -469,7 +486,6 @@ public class MapFragment extends Fragment implements
             public void onMapClick(LatLng point) {
                 Log.d("Map","Map clicked");
 //                if (behavior.getState()==BottomSheetBehavior.STATE_EXPANDED) {
-                    hideLegend();
                     collapseBottomSheet();
 //                }
             }
@@ -893,7 +909,6 @@ public class MapFragment extends Fragment implements
     @Override
     public void onSearchTextChanged(String oldQuery,String newQuery) {
         getCurrentLocation();
-        hideLegend();
         if (mLastLocation!=null)
             getAddressSuggestions(newQuery);
         else
@@ -1126,6 +1141,7 @@ public class MapFragment extends Fragment implements
     }
 
     private void addDestinationMarker(LatLng location,String name){
+        routed=true;
         collapseBottomSheet();
         destinationSet=true;
         destinatonMarker=mGoogleMap.addMarker(new MarkerOptions()
@@ -1174,34 +1190,35 @@ public class MapFragment extends Fragment implements
                 try {
                     if (response.equals("[]")) {
 
-                    } else {
-                            // Create a JSON object hierarchy from the results
-                            JSONObject responseObject = new JSONObject(response);
-                            int errorCode = responseObject.getInt("error_code");
-                            if (errorCode == 0) {
-                                JSONArray chargers = responseObject.getJSONArray("waypoints");
-                                JSONArray ids = responseObject.getJSONArray("charging_station_ids");
-                                ArrayList<LatLng> chargerLocations = new ArrayList<>();
+                    }
+                    else {
+                        // Create a JSON object hierarchy from the results
+                        JSONObject responseObject = new JSONObject(response);
+                        int errorCode = responseObject.getInt("error_code");
+                        if (errorCode == 0) {
+                            JSONArray chargers = responseObject.getJSONArray("waypoints");
+                            JSONArray ids = responseObject.getJSONArray("charging_station_ids");
+                            ArrayList<LatLng> chargerLocations = new ArrayList<>();
 
-                                for (int i = 0; i < chargers.length(); i++) {
-                                    String chargerLocation = chargers.get(i).toString();
-                                    if (chargerLocation != null && !chargerLocation.equals("[]")) {
-                                        String latLng[] = chargerLocation.split(",");
+                            for (int i = 0; i < chargers.length(); i++) {
+                                String chargerLocation = chargers.get(i).toString();
+                                if (chargerLocation != null && !chargerLocation.equals("[]")) {
+                                    String latLng[] = chargerLocation.split(",");
 
-                                        chargerLocations.add(new LatLng(Double.parseDouble(latLng[0].replaceAll("[^0-9.]", "")),
-                                                Double.parseDouble(latLng[1].replaceAll("[^0-9.]", ""))));
-                                    }
+                                    chargerLocations.add(new LatLng(Double.parseDouble(latLng[0].replaceAll("[^0-9.]", "")),
+                                            Double.parseDouble(latLng[1].replaceAll("[^0-9.]", ""))));
                                 }
+                            }
 
-                                route(start, end, chargerLocations);
-                            }
-                            else {
-                                String message = responseObject.getString("error");
-                                hideProgress();
-                                removeDestinationMarker();
-                                showDialog("Routing Error", message, "checkRoute",
-                                        new Object[]{vin, start, end, capacity, perc}, false);
-                            }
+                            route(start, end, chargerLocations);
+                        }
+                        else {
+                            String message = responseObject.getString("error");
+                            hideProgress();
+                            removeDestinationMarker();
+                            showDialog("Routing Error", message, "checkRoute",
+                                    new Object[]{vin, start, end, capacity, perc}, false);
+                        }
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -1683,16 +1700,6 @@ public class MapFragment extends Fragment implements
             e.printStackTrace();
         }
         return routes;
-    }
-
-    private void showLegend(){
-        fabLegend.hide();
-        legendView.setVisibility(View.VISIBLE);
-    }
-
-    private void hideLegend(){
-        fabLegend.show();
-        legendView.setVisibility(View.INVISIBLE);
     }
 
     private void expandBottomSheet(){

@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
+import com.jlanka.jltripplanner.GoogleAnalyticsService;
+
 import org.json.JSONArray;
 
 import java.util.HashMap;

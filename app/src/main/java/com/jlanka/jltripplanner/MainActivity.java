@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -15,6 +16,7 @@ import android.provider.Settings;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -38,6 +40,8 @@ import java.net.CookieManager;
 import java.util.HashMap;
 
 import cat.ereza.customactivityoncrash.config.CaocConfig;
+
+import com.facebook.stetho.Stetho;
 import com.jlanka.jltripplanner.Fragments.HistoryFragment;
 import com.jlanka.jltripplanner.Fragments.MapFragment;
 import com.jlanka.jltripplanner.Fragments.PaymentFragment;
@@ -66,8 +70,8 @@ public class MainActivity extends AppCompatActivity
         isLocationEnabled();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //Stetho.initializeWithDefaults(this);
-        checkNetwork();
+        Stetho.initializeWithDefaults(this);
+        //checkNetwork();
         checkLocationPermission();
         System.out.println("CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE");
         CaocConfig.Builder.create()
@@ -177,10 +181,7 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
-        } else {
-
         }
-
         super.onBackPressed();
     }
 
@@ -294,13 +295,13 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    public void checkNetwork(){
+    /*public void checkNetwork(){
         String ss = NetworkUtil.getConnectivityStatusString(this);
         if(ss.contains("Not connected")){
             AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
             alertDialog.setTitle("No Internet");
             alertDialog.setMessage("Please check your internet Connection & try again...");
-            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Exit",
+            alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Exit",
                     new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
                             dialog.dismiss();
@@ -310,7 +311,7 @@ public class MainActivity extends AppCompatActivity
                     });
             alertDialog.show();
         }
-    }
+    }*/
 
     /* Checks if external storage is available for read and write */
     public boolean isExternalStorageWritable() {

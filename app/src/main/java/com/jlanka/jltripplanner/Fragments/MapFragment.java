@@ -355,11 +355,6 @@ public class MapFragment extends Fragment implements
                     mCurrLocationMarker.remove();
                 }
 
-                if (firstLoad) {
-                    mGoogleMap.moveCamera( CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()) , 14.0f) );
-                    firstLoad = false;
-                }
-
                 latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
                 if ((Math.abs(currentLatitude-mLastLocation.getLatitude())>0.001) && (Math.abs(currentLongitude-mLastLocation.getLongitude())>0.0001)){
                     currentLatitude = Math.floor(mLastLocation.getLatitude()*100)/100;
@@ -464,7 +459,13 @@ public class MapFragment extends Fragment implements
             mGoogleMap.setMyLocationEnabled(true);
 
         //---------------Thiwanka-----------------
+        if (firstLoad && mLastLocation!=null) {
+            mGoogleMap.moveCamera( CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()) , 14.0f) );
+            firstLoad = false;
+        }
+        mGoogleMap.setLatLngBoundsForCameraTarget(new LatLngBounds(new LatLng(5.774857, 79.579479),new LatLng(9.876957, 81.767971)));
         fsv.setVisibility(View.VISIBLE);
+        mGoogleMap.setMinZoomPreference(7f);
 
         googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
         googleMap.getUiSettings().setMapToolbarEnabled(false);
@@ -854,45 +855,6 @@ public class MapFragment extends Fragment implements
         startActivity(launchBrowser);
     }
 
-    public void getCredit(final String user_mobile){
-        RequestQueue rq = Volley.newRequestQueue(getActivity().getApplicationContext());
-
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, ServerConnector.SERVER_ADDRESS,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-
-                        try {
-                            JSONObject mydata = new JSONObject(response);
-                            String credit = mydata.get("credit").toString();
-//                            System.out.println("Credits : "+credit);
-                            user.put(SessionManager.user_credit, credit);
-                            ((MainActivity)getActivity()).setUser_credit(user.get(SessionManager.user_credit));
-                        } catch (JSONException e) {
-                            trackError(e);
-                            e.printStackTrace();
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.d("Error   ", String.valueOf(error));
-                    }
-                })
-        {
-            @Override
-            protected Map<String, String> getParams()
-            {
-                Map<String, String>  params = new HashMap<String, String>();
-                params.put("fnID", "3");
-                params.put("mobNo", user_mobile);
-                return params;
-            }
-        };
-        rq.add(stringRequest);
-    }
-
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------Thiwanka----------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -976,6 +938,7 @@ public class MapFragment extends Fragment implements
 
             dlgAlert.setCancelable(!required);
             android.app.AlertDialog ad=dlgAlert.create();
+            ad.setIcon(R.mipmap.ic_launcher);
             ad.show();
             Button b = ad.getButton(DialogInterface.BUTTON_NEGATIVE);
             dlgAlert.setIcon(R.drawable.logo);
@@ -1125,21 +1088,6 @@ public class MapFragment extends Fragment implements
                 .build();                   // Creates a CameraPosition from the builder
 
         mGoogleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-    }
-
-    private void panCamera(LatLng[] includePoints){
-        LatLngBounds.Builder builder = new LatLngBounds.Builder();
-
-        for(LatLng l:includePoints) {
-            builder.include(l);
-        }
-
-        LatLngBounds bounds = builder.build();
-
-        int padding = 100; // offset from edges of the map in pixels
-        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
-
-        mGoogleMap.animateCamera(cu);
     }
 
     private void addDestinationMarker(LatLng location,String name){

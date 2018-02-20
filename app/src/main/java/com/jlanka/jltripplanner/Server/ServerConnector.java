@@ -111,7 +111,8 @@ public class ServerConnector {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String>  parameater = new HashMap<>();
-                parameater.putAll(params);
+                if (params!=null)
+                    parameater.putAll(params);
                 return parameater;
             }
         };

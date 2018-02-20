@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -130,8 +131,8 @@ public class MapFragment extends Fragment implements
 //    public JSONArray itemArray =new JSONArray();
     public JSONArray stations_object = new JSONArray();
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-
     public static boolean isCharging,destinationSet=false;
+    private AlertDialog ad;
 
     JSONObject charger_array;
 
@@ -455,8 +456,11 @@ public class MapFragment extends Fragment implements
         MapsInitializer.initialize(getActivity());
         mGoogleMap=googleMap;
 
-        if (checkLocationPermission())
+        if (checkLocationPermission()) {
+            LocationManager locationManager = (LocationManager)getActivity().getSystemService(Context.LOCATION_SERVICE);
+            mLastLocation = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
             mGoogleMap.setMyLocationEnabled(true);
+        }
 
         //---------------Thiwanka-----------------
         if (firstLoad && mLastLocation!=null) {
@@ -564,6 +568,7 @@ public class MapFragment extends Fragment implements
     public void getResponse(final double lat, final double lng){
         String charging_address = "charging_stations/";
 
+        ServerConnector.getInstance(getActivity()).cancelRequest("ChargingStations");
         ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+charging_address,null,Request.Method.GET,
         new OnResponseListner() {
             @Override
@@ -887,69 +892,88 @@ public class MapFragment extends Fragment implements
     @RequiresApi(api = Build.VERSION_CODES.M)
     private void showDialog(String title, String message, final String failedMethod, final Object[] passedQuery, boolean required) {
         try {
-            final android.app.AlertDialog.Builder dlgAlert = new android.app.AlertDialog.Builder(getActivity().getWindow().getContext());
-            dlgAlert.setMessage(message);
-            dlgAlert.setTitle(title);
-            String positiveButtonText = "Retry";
+                AlertDialog.Builder dlgAlert = new AlertDialog.Builder(getActivity().getWindow().getContext());
+                dlgAlert.setMessage(message);
+                dlgAlert.setTitle(title);
+                String positiveButtonText = "Retry";
 
-            dlgAlert.setPositiveButton(positiveButtonText, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    switch (failedMethod) {
-                        case "getAddressSuggestions":
-                            getAddressSuggestions(passedQuery[0].toString());
-                            break;
-                        case "searchLocationByName":
-                            searchLocationByName(passedQuery[0].toString());
-                            break;
-                        case "setDestinationOnClick":
-                            setDestinationOnClick((LatLng) passedQuery[0]);
-                            break;
-                        case "checkRoute":
-                            checkRoute(passedQuery[0].toString(), (LatLng) passedQuery[1], (LatLng) passedQuery[2],
-                                    passedQuery[3].toString(), passedQuery[4].toString());
-                            break;
-                        case "route":
-                            setDestinationOnClick((LatLng) passedQuery[1]);
-                            route((LatLng) passedQuery[0], (LatLng) passedQuery[1], (ArrayList) passedQuery[2]);
-                            break;
-                        case "getResponse":
-                            getResponse((Double) passedQuery[0], (Double) passedQuery[1]);
-                            break;
-                    }
-                }
-            });
-
-            if (!required) {
-                dlgAlert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                dlgAlert.setPositiveButton(positiveButtonText, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         switch (failedMethod) {
-                            case "route":
-                                removeDestinationMarker();
+                            case "getAddressSuggestions":
+                                getAddressSuggestions(passedQuery[0].toString());
+                                ad.dismiss();
+                                ad=null;
+                                break;
+                            case "searchLocationByName":
+                                searchLocationByName(passedQuery[0].toString());
+                                ad.dismiss();
+                                ad=null;
+                                break;
+                            case "setDestinationOnClick":
+                                setDestinationOnClick((LatLng) passedQuery[0]);
+                                ad.dismiss();
+                                ad=null;
                                 break;
                             case "checkRoute":
-                                removeDestinationMarker();
+                                checkRoute(passedQuery[0].toString(), (LatLng) passedQuery[1], (LatLng) passedQuery[2],
+                                        passedQuery[3].toString(), passedQuery[4].toString());
+                                ad.dismiss();
+                                ad=null;
+                                break;
+                            case "route":
+                                setDestinationOnClick((LatLng) passedQuery[1]);
+                                route((LatLng) passedQuery[0], (LatLng) passedQuery[1], (ArrayList) passedQuery[2]);
+                                ad.dismiss();
+                                ad=null;
+                                break;
+                            case "getResponse":
+                                getResponse((Double) passedQuery[0], (Double) passedQuery[1]);
+                                ad.dismiss();
+                                ad=null;
                                 break;
                         }
                     }
                 });
-            }
 
-            dlgAlert.setCancelable(!required);
-            android.app.AlertDialog ad=dlgAlert.create();
-            ad.setIcon(R.mipmap.ic_launcher);
-            ad.show();
-            Button b = ad.getButton(DialogInterface.BUTTON_NEGATIVE);
-            dlgAlert.setIcon(R.drawable.logo);
+                if (!required) {
+                    dlgAlert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            switch (failedMethod) {
+                                case "route":
+                                    removeDestinationMarker();
+                                    ad.dismiss();
+                                    ad=null;
+                                    break;
+                                case "checkRoute":
+                                    removeDestinationMarker();
+                                    ad.dismiss();
+                                    ad=null;
+                                    break;
+                            }
+                        }
+                    });
+                }
 
-            if(b != null) {
-                b.setTextColor(Color.BLACK);
+                dlgAlert.setCancelable(!required);
+                if (ad==null) {
+                    ad = dlgAlert.create();
+                    ad.setIcon(R.mipmap.ic_launcher);
+                    ad.show();
+                    Button b = ad.getButton(DialogInterface.BUTTON_NEGATIVE);
+                    if (b != null) {
+                        b.setTextColor(Color.BLACK);
+                    }
+                }
+                dlgAlert.setIcon(R.drawable.logo);
+
+
+        }
+        catch(Exception e){
+                GoogleAnalyticsService.getInstance().trackException(getActivity().getApplicationContext(), e);
             }
-        }
-        catch (Exception e){
-            GoogleAnalyticsService.getInstance().trackException(getActivity().getApplicationContext(),e);
-        }
     }
 
     private void getAddressSuggestions(final String query){
@@ -1647,13 +1671,13 @@ public class MapFragment extends Fragment implements
 
     private void expandBottomSheet(){
         behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-        int val14 = getMarginInDp(14);
-        int val80=getMarginInDp(80);
-        int val145=getMarginInDp(145);
+        int leftMargin = getMarginInDp(8);
+        int bottomMargin=getMarginInDp(120);
+        int endBottomMargin=getMarginInDp(160);
 
-        setMargins(fabRoute ,0,0,val14,val80);
-        setMargins(fabNav ,0,0,val14,val80);
-        setMargins(fabEnd ,0,0,val14,val145);
+        setMargins(fabRoute ,0,0,leftMargin,bottomMargin);
+        setMargins(fabNav ,0,0,leftMargin,bottomMargin);
+        setMargins(fabEnd ,0,0,leftMargin,endBottomMargin);
     }
 
     private void collapseBottomSheet(){

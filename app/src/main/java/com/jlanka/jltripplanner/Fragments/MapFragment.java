@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Fragment;
 import android.app.ProgressDialog;
+import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -16,6 +17,7 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomSheetBehavior;
@@ -120,7 +122,6 @@ public class MapFragment extends Fragment implements
     //--------------Thiwanka--------------
     public static boolean routed;
     private static Marker destinatonMarker;
-    private static MapFragment mapFragment;
 
     View mView;
     double currentLatitude,currentLongitude,mylatitude,mylongitude;
@@ -130,7 +131,6 @@ public class MapFragment extends Fragment implements
 
 //    public JSONArray itemArray =new JSONArray();
     public JSONArray stations_object = new JSONArray();
-    public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
     public static boolean isCharging,destinationSet=false;
     private AlertDialog ad;
 
@@ -198,8 +198,10 @@ public class MapFragment extends Fragment implements
 //        getProfileData(user_mobile);
         //getCredit(user_mobile);
         if(session.isLoggedIn()) {
-            addStateSubscriber();
+
         }
+        addStateSubscriber();
+
         behavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
@@ -224,13 +226,12 @@ public class MapFragment extends Fragment implements
 
             @Override
             public void onSlide(@NonNull View bottomSheet, float slideOffset) {
-                int val14 = getMarginInDp((int)Math.round(6*slideOffset)+8);
-                int val80=getMarginInDp((int)Math.round(70*slideOffset)+10);
-                int val140=getMarginInDp((int)Math.round(75*slideOffset)+70);
+                int bottomMargin=getMarginInDp((int)Math.round(180*slideOffset)+10);
+                int endBottomMargin=getMarginInDp((int)Math.round(180*slideOffset)+70);
 
-                setMargins(fabRoute ,0,0,val14,val80);
-                setMargins(fabNav ,0,0,val14,val80);
-                setMargins(fabEnd ,0,0,val14,val140);
+                setMargins(fabRoute ,0,0,8,bottomMargin);
+                setMargins(fabNav ,0,0,8,bottomMargin);
+                setMargins(fabEnd ,0,0,8,endBottomMargin);
             }
         });
 
@@ -326,13 +327,6 @@ public class MapFragment extends Fragment implements
             mMapView.onResume();
             mMapView.getMapAsync(this);
         }
-    }
-
-    public static MapFragment getInstance(){
-        if (mapFragment==null)
-            mapFragment=new MapFragment();
-
-        return mapFragment;
     }
 
     @Override
@@ -711,8 +705,9 @@ public class MapFragment extends Fragment implements
     }
 
     private void addStateSubscriber() {
-        mqttHelper = new MQTTHelper(getActivity().getApplicationContext(),"tcp://development.enetlk.com:1887");
-        mqttHelper.subscriptionTopic=("server/"+user_mobile.substring(1)+"/status");
+        mqttHelper= new MQTTHelper(getActivity(),"tcp://development.enetlk.com:1887");
+        mqttHelper.subscriptionTopic=("server/"+user_mobile+"/status");
+        System.out.println("SUBS TOPIC : " + mqttHelper.subscriptionTopic);
         mqttHelper.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean b, String s) {
@@ -721,12 +716,12 @@ public class MapFragment extends Fragment implements
             public void connectionLost(Throwable throwable) {
             }
             @Override
-            public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
-                Log.w("Is User : ",mqttMessage.toString());
+            public void messageArrived(String topic, MqttMessage mqttMessage)  {
+                System.out.println("_________Is User : "+mqttMessage.toString());
                 if(mqttMessage.toString().equals("charging")){
                     setCharging();
-                }else if(mqttMessage.toString().contains("busy") || mqttMessage.toString().contains("recharge")){
-                    notifyOnError(mqttMessage.toString());
+                }else if(mqttMessage.toString().contains("busy") || mqttMessage.toString().contains("Error!")){
+                    notifyOnError(mqttMessage.toString().replace("Error!",""));
                 }else if(mqttMessage.toString().equals("not charging")){
                     setFree();
                 }
@@ -797,9 +792,21 @@ public class MapFragment extends Fragment implements
         charging_marker =selectedMarker;
         session.user_charging_station(selectedMarker);
 
+        Handler h=new Handler();
+        h.postDelayed(new Runnable() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            @Override
+            public void run() {
+                if (isCharging!=true && progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                    showDialog("Connection Error", "Station server connection timeout!", null, null, false);
+                }
+            }
+        },5000);
+
         JSONObject payload = new JSONObject();
         try {
-            payload.put("cusid",user_mobile.substring(1));
+            payload.put("cusid",user_mobile);
             payload.put("bysms", 0);
             payload.put("message", "ev chg "+ charging_marker +" "+user_pin);
             chargingDuration=System.currentTimeMillis();
@@ -811,11 +818,10 @@ public class MapFragment extends Fragment implements
 
         }
 
-//        Log.d("CHARGE NOW : " , payload.toString());
+        System.out.println("CHARGE NOW : " + payload.toString());
 
         MQTTPublisher mqttPublisher = new MQTTPublisher(getActivity().getApplicationContext(),"tcp://development.enetlk.com:1883");
         mqttPublisher.publishToTopic(payload.toString(),getActivity().getApplicationContext());
-        collapseBottomSheet();
     }
 
     public void stopCharge(){
@@ -826,9 +832,21 @@ public class MapFragment extends Fragment implements
         progressDialog.setCancelable(false);
         progressDialog.show();
 
+        Handler h=new Handler();
+        h.postDelayed(new Runnable() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            @Override
+            public void run() {
+                if (isCharging==true && progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                    showDialog("Connection Error", "Station server connection timeout!", null, null, false);
+                }
+            }
+        },5000);
+
         JSONObject payload = new JSONObject();
         try {
-            payload.put("cusid",user_mobile.substring(1));
+            payload.put("cusid",user_mobile);
             payload.put("bysms", 0);
             payload.put("message", "ev stop "+ charging_marker +" "+user_pin);
             chargingDuration=System.currentTimeMillis()-chargingDuration;
@@ -1269,6 +1287,7 @@ public class MapFragment extends Fragment implements
                                 builder.include(start);
                                 getActivity().runOnUiThread(
                                         new Runnable() {
+                                            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
                                             @Override
                                             public void run() {
                                                 int size = routes.size();
@@ -1475,17 +1494,16 @@ public class MapFragment extends Fragment implements
     @RequiresApi(api = Build.VERSION_CODES.M)
     public static Intent makeNotificationMainIntent(Context context, String msg){
         final Intent intent = new Intent(context , MainActivity.class );
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        //intent.putExtra( NOTIFICATION_MSG, msg );
+        intent.setAction(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra( "NOTIFICATION MSG", msg );
         return intent;
     }
 
     public static Intent makeNotificationFeedbackIntent(Context context, String msg) {
         final Intent intent = new Intent( context, MainActivity.class );
-        intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        intent.setPackage(null);
-        //intent.putExtra( NOTIFICATION_MSG, msg );
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.putExtra( "NOTIFICATION MSG", msg );
         return intent;
     }
@@ -1672,8 +1690,8 @@ public class MapFragment extends Fragment implements
     private void expandBottomSheet(){
         behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
         int leftMargin = getMarginInDp(8);
-        int bottomMargin=getMarginInDp(120);
-        int endBottomMargin=getMarginInDp(160);
+        int bottomMargin=getMarginInDp(180);
+        int endBottomMargin=getMarginInDp(250);
 
         setMargins(fabRoute ,0,0,leftMargin,bottomMargin);
         setMargins(fabNav ,0,0,leftMargin,bottomMargin);

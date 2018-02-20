@@ -50,7 +50,7 @@ public class ServerConnector {
     }
 
     public synchronized void sendRequest(String serverAddress,Map<String, String> params ,int requestMethod,OnResponseListner onResponseListner,OnErrorListner onErrorListner,String tag){
-        StringRequest postRequest = new StringRequest(requestMethod/* Request.Method.POST */, serverAddress,
+        StringRequest postRequest = new StringRequest(requestMethod, serverAddress,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {

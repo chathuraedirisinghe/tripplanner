@@ -2,9 +2,9 @@ package com.jlanka.jltripplanner;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -16,7 +16,6 @@ import android.provider.Settings;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -36,8 +35,8 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.CookieManager;
 import java.util.HashMap;
+import java.util.Map;
 
 import cat.ereza.customactivityoncrash.config.CaocConfig;
 
@@ -61,6 +60,7 @@ public class MainActivity extends AppCompatActivity
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
     SessionManager session;
     FragmentManager fragmentManager = getFragmentManager();
+    MapFragment mContent;
     String user_credit;
     TextView creditView;
     String vehicles;
@@ -157,7 +157,10 @@ public class MainActivity extends AppCompatActivity
             if(vehicles==null || vehicles.equals("[]")){
                 fragmentManager.beginTransaction().replace(R.id.content_frame, new VehicleFragment()).commit();
             }else{
-                fragmentManager.beginTransaction().replace(R.id.content_frame, new MapFragment()).commit();
+                if (mContent==null)
+                    mContent= new MapFragment();
+
+                fragmentManager.beginTransaction().replace(R.id.content_frame, mContent).commit();
             }
         }
 
@@ -220,7 +223,10 @@ public class MainActivity extends AppCompatActivity
             if(vehicles==null || vehicles.equals("[]")){
                 fragmentManager.beginTransaction().replace(R.id.content_frame, new VehicleFragment()).addToBackStack(VehicleFragment.class.getName()).commit();
             }else{
-                fragmentManager.beginTransaction().replace(R.id.content_frame,MapFragment.getInstance()).addToBackStack(MapFragment.class.getName()).commit();
+                if (mContent==null)
+                    mContent=new MapFragment();
+
+                fragmentManager.beginTransaction().replace(R.id.content_frame,mContent).addToBackStack(MapFragment.class.getName()).commit();
             }
         } else if (id == R.id.nav_history) {
             fragmentManager.beginTransaction().replace(R.id.content_frame, new HistoryFragment()).addToBackStack(HistoryFragment.class.getName()).commit();

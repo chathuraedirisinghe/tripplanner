@@ -109,10 +109,12 @@ public class GeofenceMonitorService extends IntentService {
             );
         }
 
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        notificationIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(getApplicationContext());
         stackBuilder.addParentStack(MainActivity.class);
         stackBuilder.addNextIntent(notificationIntent);
-        PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0,  PendingIntent.FLAG_ONE_SHOT);
+
+        PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0,  PendingIntent.FLAG_UPDATE_CURRENT);
 
         // Creating and sending Notification
         NotificationManager notificatioMng =

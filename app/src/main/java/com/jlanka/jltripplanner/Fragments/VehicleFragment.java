@@ -229,7 +229,7 @@ public class VehicleFragment extends Fragment {
                 try{
                     JSONObject user_data = new JSONObject(response);
                     JSONObject VehicleDetails = new JSONObject(response);
-                    JSONArray _vehicles = new JSONArray(session.getVehicle());
+                    JSONArray _vehicles = new JSONArray(session.getVehicles());
                     _vehicles.put(VehicleDetails);
                     session.setVehicles(_vehicles);
                     GoogleAnalyticsService.getInstance().setAction("Vehicle","Add Vehicle",modal+year+"");

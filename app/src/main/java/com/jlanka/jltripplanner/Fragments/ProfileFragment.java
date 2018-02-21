@@ -236,7 +236,7 @@ public class ProfileFragment extends Fragment {
                 Log.w("User Details : ", String.valueOf(response));
                 try{
                     JSONObject VehicleDetails = new JSONObject(response);
-                    JSONArray _vehicles = new JSONArray(session.getVehicle());
+                    JSONArray _vehicles = new JSONArray(session.getVehicles());
                     _vehicles.put(VehicleDetails);
                     session.setVehicles(_vehicles);
                     GoogleAnalyticsService.getInstance().setAction("Vehicle","Add Vehicle",modal+year+"");

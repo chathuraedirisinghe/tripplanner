@@ -96,32 +96,31 @@ public class GeofenceMonitorService extends IntentService {
     private void sendNotification(String uId,String title,String message ) {
         Log.i(TAG, "sendNotification: " + title + message );
 
-        Intent notificationIntent;
-        // Intent to start the main Activity
+        Intent intent = new Intent(this,MainActivity.class);
         if (uId.equals("Charger_Location")) {
-            notificationIntent = MapFragment.makeNotificationMainIntent(
-                    this, title
-            );
+
         }
         else{
-            notificationIntent = MapFragment.makeNotificationFeedbackIntent(
-                    this, title
-            );
+
         }
 
-        notificationIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(getApplicationContext());
-        stackBuilder.addParentStack(MainActivity.class);
-        stackBuilder.addNextIntent(notificationIntent);
+        intent.addCategory(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+        //intent.setClass(this, MainActivity.class);
 
-        PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0,  PendingIntent.FLAG_UPDATE_CURRENT);
+        intent.addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT|
+                Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        //PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0,  PendingIntent.FLAG_UPDATE_CURRENT);
 
         // Creating and sending Notification
         NotificationManager notificatioMng =
                 (NotificationManager) getSystemService( Context.NOTIFICATION_SERVICE );
         notificatioMng.notify(
                 GEOFENCE_NOTIFICATION_ID,
-                createNotification(title,message, notificationPendingIntent));
+                createNotification(title,message, pendingIntent));
     }
 
     // Create notification

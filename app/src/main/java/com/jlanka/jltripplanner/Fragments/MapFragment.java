@@ -85,6 +85,7 @@ import com.jlanka.jltripplanner.LocationMonitor;
 import com.jlanka.jltripplanner.MQTT.MQTTHelper;
 import com.jlanka.jltripplanner.MQTT.MQTTPublisher;
 import com.jlanka.jltripplanner.MainActivity;
+import com.jlanka.jltripplanner.Model.Charger;
 import com.jlanka.jltripplanner.Model.FoundSuggestion;
 import com.jlanka.jltripplanner.Model.GPSPoint;
 import com.jlanka.jltripplanner.Model.Route;
@@ -116,12 +117,15 @@ public class MapFragment extends Fragment implements
     MapView mMapView;
     Location mLastLocation;
     Marker mCurrLocationMarker;
-    Marker chargerMarker;
     String selectedMarker;
 
     //--------------Thiwanka--------------
     public static boolean routed;
+    private ArrayList<Marker> markers;
     private static Marker destinatonMarker;
+    private ArrayList<Charger> chargingStations;
+
+    public static Context currentContext;
 
     View mView;
     double currentLatitude,currentLongitude,mylatitude,mylongitude;
@@ -184,6 +188,8 @@ public class MapFragment extends Fragment implements
         super.onCreateView(inflater,container,savedInstanceState);
         mView=inflater.inflate(R.layout.fragment_map,container,false);
         ButterKnife.bind(this,mView);
+
+        currentContext = getActivity().getApplicationContext();
 
         getCurrentLocation();
         container = (ViewGroup) getActivity().findViewById(R.id.cordinator_layout);
@@ -287,8 +293,14 @@ public class MapFragment extends Fragment implements
             @Override
             public void onClick(View view) {
                 getCurrentLocation();
-                if (mLastLocation!=null)
-                    checkRoute("1234", new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()), destinatonMarker.getPosition(), "30", "30");
+                if (mLastLocation!=null) {
+                    try {
+                        String vin=new JSONArray(session.getVehicles()).getJSONObject(0).getString("vin");
+                        checkRoute(vin, new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), destinatonMarker.getPosition(), "30", "30");
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         });
 
@@ -380,66 +392,64 @@ public class MapFragment extends Fragment implements
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        if (marker.getTag().equals("Charger_Marker")) {
+        if (marker.getTag().equals("Destination_Marker"))
+            marker.showInfoWindow();
+        else if (!marker.getTag().equals("Polyline_InfoWindow")) {
             selectedMarker = marker.getTitle();
-            selectedMarker_latLng = marker.getPosition();
-            Log.d("Selected Marker", String.valueOf(selectedMarker));
-            Log.d("Stations Array Up : ", stations_object.toString());
-            try {
-                for (int i = 0; i < stations_object.length(); i++) {
-                    JSONObject charger_array = stations_object.getJSONObject(i);
-                    final String chargerid = charger_array.getString("device_id");
-                    if (chargerid.equals(selectedMarker)) {
-                        charger_type = charger_array.getString("charger_type");
-                        charger_address = charger_array.getString("location");
-                        charger_available = charger_array.getString("availability");
-                    }
-                }
+            for (Charger c:chargingStations) {
+                if (c.getDevice_id().equals(marker.getTag())) {
+                    _charger_id.setText(c.getDevice_id());
 
-                switch (charger_available){
-                    case "Available":
+                    if (c.getType().equals("AC"))
+                        _charger_type.setText("Standard");
+                    else
+                        _charger_type.setText("Rapid");
+
+                    //              _charger_address.setText("Address : "+charger_address);
+                    _charger_availability.setText(" " + c.getState());
+                    _charger_icon.setImageBitmap(getMarkerIcon(c.getType(), c.getState()));
+
+                    if (c.getState().equals("Available")) {
                         _chargenow_btn.setEnabled(true);
                         _chargenow_btn.setAlpha(1f);
-                        _charger_icon.setImageBitmap(getMarkerIcon(charger_type, "Available"));
-                        break;
-                    case "Busy":
+                    }
+                    else{
                         _chargenow_btn.setEnabled(false);
                         _chargenow_btn.setAlpha(0.75f);
-                        _charger_icon.setImageBitmap(getMarkerIcon(charger_type,"Busy" ));
-                        break;
-                    case "Pending...":
-                        _chargenow_btn.setEnabled(false);
-                        _chargenow_btn.setAlpha(0.75f);
-                        _charger_icon.setImageBitmap(getMarkerIcon(charger_type,"NA" ));
-                        break;
-                    case "NA":
-                        _chargenow_btn.setEnabled(false);
-                        _chargenow_btn.setAlpha(0.75f);
-                        _charger_icon.setImageBitmap(getMarkerIcon(charger_type,"NA" ));
-                        break;
+                    }
+
+                    if (isCharging) {
+                        setCharging();
+                    }
+
+                    if (behavior.getState() == BottomSheetBehavior.STATE_COLLAPSED) {
+                        expandBottomSheet();
+                    }
+                    return false;
                 }
-
-                if (isCharging) {
-                    setCharging();
-                }
-
-                //collapseBottomSheet();
-                if (behavior.getState() == BottomSheetBehavior.STATE_COLLAPSED) {
-                    expandBottomSheet();
-                }
-                _charger_id.setText(marker.getTitle());
-
-                if (charger_type.equals("AC"))
-                    _charger_type.setText("Standard");
-                else
-                    _charger_type.setText("Rapid");
-//        _charger_address.setText("Address : "+charger_address);
-                _charger_availability.setText(" " + charger_available);
-
-            } catch (JSONException e) {
-                trackError(e);
-                e.printStackTrace();
             }
+
+//
+//            selectedMarker_latLng = marker.getPosition();
+//            Log.d("Selected Marker", String.valueOf(selectedMarker));
+//            Log.d("Stations Array Up : ", stations_object.toString());
+//            try {
+//                for (int i = 0; i < stations_object.length(); i++) {
+//                    JSONObject charger_array = stations_object.getJSONObject(i);
+//                    final String chargerid = charger_array.getString("device_id");
+//                    if (chargerid.equals(selectedMarker)) {
+//                        charger_type = charger_array.getString("charger_type");
+//                        charger_address = charger_array.getString("location");
+//                        charger_available = charger_array.getString("availability");
+//                    }
+//                }
+
+
+
+//            } catch (JSONException e) {
+//                trackError(e);
+//                e.printStackTrace();
+//            }
         }
         return false;
     }
@@ -450,38 +460,32 @@ public class MapFragment extends Fragment implements
         MapsInitializer.initialize(getActivity());
         mGoogleMap=googleMap;
 
-        if (checkLocationPermission()) {
-            LocationManager locationManager = (LocationManager)getActivity().getSystemService(Context.LOCATION_SERVICE);
-            mLastLocation = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
-            mGoogleMap.setMyLocationEnabled(true);
-        }
-
-        //---------------Thiwanka-----------------
-        if (firstLoad && mLastLocation!=null) {
-            mGoogleMap.moveCamera( CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()) , 14.0f) );
-            firstLoad = false;
-        }
-        mGoogleMap.setLatLngBoundsForCameraTarget(new LatLngBounds(new LatLng(5.774857, 79.579479),new LatLng(9.876957, 81.767971)));
-        fsv.setVisibility(View.VISIBLE);
-        mGoogleMap.setMinZoomPreference(7f);
-
-        googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-        googleMap.getUiSettings().setMapToolbarEnabled(false);
-        googleMap.getUiSettings().setCompassEnabled(true);
-
         googleMap.setOnMarkerClickListener(this);
-
         googleMap.setOnCameraIdleListener(this);
         googleMap.setOnCameraMoveStartedListener(this);
         googleMap.setOnCameraMoveListener(this);
         googleMap.setOnCameraMoveCanceledListener(this);
 
-        //Initialize Google Play Services
-        mGoogleMap.setMyLocationEnabled(true);
+        googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        googleMap.getUiSettings().setMapToolbarEnabled(false);
+        mGoogleMap.setLatLngBoundsForCameraTarget(new LatLngBounds(new LatLng(5.774857, 79.579479),new LatLng(9.876957, 81.767971)));
+        mGoogleMap.setMinZoomPreference(7f);
+        fsv.setVisibility(View.VISIBLE);
+        mGoogleMap.setPadding(0,getMarginInDp(55),getMarginInDp(2),0);
 
+        if (checkLocationPermission()) {
+            LocationManager locationManager = (LocationManager)getActivity().getSystemService(Context.LOCATION_SERVICE);
+            mLastLocation = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+            mGoogleMap.setMyLocationEnabled(true);
+            mGoogleMap.moveCamera( CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()) , 14.0f) );
+        }
+
+        //---------------Thiwanka-----------------
+        if (firstLoad && mLastLocation!=null) {
+            firstLoad = false;
+        }
 
         mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-
             @Override
             public void onMapClick(LatLng point) {
                 Log.d("Map","Map clicked");
@@ -490,9 +494,6 @@ public class MapFragment extends Fragment implements
 //                }
             }
         });
-
-        //----------------------------Thiwanka---------------------------------------
-        mGoogleMap.setPadding(0,getMarginInDp(55),getMarginInDp(2),0);
 
         mGoogleMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
@@ -525,7 +526,7 @@ public class MapFragment extends Fragment implements
         System.out.println("Location Distance : "+ distance);
 
         if(distance>5000.0){
-            getResponse(nextlatitude,nextlongitude);
+            //getResponse(nextlatitude,nextlongitude);
         }else{
             //nothing
         }
@@ -572,8 +573,7 @@ public class MapFragment extends Fragment implements
                             if(response.equals("[]")){
                                 System.out.println("Charger Data : "+response);
                             }else{
-                                stations_object = new JSONArray(response);
-                                stationUpdater();
+                                stationUpdater(new JSONArray(response));
                             }
 
                         } catch (JSONException e) {
@@ -594,64 +594,46 @@ public class MapFragment extends Fragment implements
         },"ChargingStations");
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
-    public void addMarkers(){
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    if (!destinationSet)
-                        mGoogleMap.clear();
+    private void addMarkers(ArrayList<Charger> chargersToDraw){
+        if (markers==null)
+            markers=new ArrayList<>();
 
-
-                    ArrayList<Marker> markers = new ArrayList<>();
-                    if (mGoogleMap.getCameraPosition().zoom>5) {
-                        for (int i = 0; i < stations_object.length(); i++) {
-                            JSONObject charger = stations_object.getJSONObject(i);
-                            System.out.println("Charger Status : " + charger.getString("availability") + " , Charger Type : " + charger.getString("charger_type"));
-
-                            chargerMarker = mGoogleMap.addMarker(new MarkerOptions()
-                                    .title(charger.getString("device_id"))
-                                    .snippet(charger.getString("location"))
-                                    .icon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon(charger.getString("charger_type").toString(),
-                                            charger.getString("availability").toString())))
-                                    .position(new LatLng(
-                                            charger.getDouble("lat"),
-                                            charger.getDouble("lng")
-                                    ))
-                            );
-                            //---------------------------Thiwanka----------------------------
-                            chargerMarker.setTag("Charger_Marker");
-                            markers.add(chargerMarker);
-                        }
-                    }
-
-                    //---------------------------Thiwanka----------------------------
-                    if(destinationSet) {
-                        for (Marker m : chargers) {
-                            m.remove();
-                        }
-                        chargers = markers;
-                    }
-
-                } catch (JSONException e) {
-                    trackError(e);
-                    e.printStackTrace();
-                }
-            }
-        });
+        for (Charger c:chargersToDraw) {
+            Marker chargerMarker = mGoogleMap.addMarker(c.getMarkerOptions());
+            chargerMarker.setIcon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon(c.getType(), c.getState())));
+            chargerMarker.setTag(c.getDevice_id());
+            startMqtt(c.getDevice_id());
+            markers.add(chargerMarker);
+        }
     }
 
-    public void stationUpdater(){
+    public void stationUpdater(JSONArray stations){
         Log.e("Station Updater","Started");
         try{
-            for(int i=0; i < stations_object.length();i++){
-                JSONObject charger_array = stations_object.getJSONObject(i);
-                final String charger_id = charger_array.getString("device_id").toLowerCase();
-                charger_array.put("availability","Pending...");
-                Log.e("Charger ID",charger_id);
-                startMqtt(charger_id);
+            ArrayList<Charger>chargersToDraw=new ArrayList<>();
+            for(int i=0; i < stations.length();i++){
+
+                JSONObject charger = stations.getJSONObject(i);
+
+                Charger c=new Charger(
+                        charger.getString("device_id"),
+                        charger.getInt("owner"),
+                        charger.getString("location"),
+                        new LatLng(Double.parseDouble(charger.getString("lat")),Double.parseDouble(charger.getString("lng"))),
+                        charger.getString("charger_type"),
+                        charger.getBoolean("availability")
+                );
+
+                if (chargingStations==null)
+                    chargingStations=new ArrayList<>();
+
+                if (!chargingStations.contains(c)) {
+                    chargingStations.add(c);
+                    chargersToDraw.add(c);
+                }
+                Log.e("Charger ID",c.getDevice_id());
             }
+            addMarkers(chargersToDraw);
         }catch (JSONException e){
             trackError(e);
             e.printStackTrace();
@@ -661,7 +643,7 @@ public class MapFragment extends Fragment implements
     @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
     public void startMqtt(final String charger_id) {
         MQTTHelper mqttHelper2 = new MQTTHelper(getActivity(),"tcp://development.enetlk.com:1887");
-        mqttHelper2.subscriptionTopic=("server/"+charger_id+"/status");
+        mqttHelper2.subscriptionTopic=("server/"+charger_id.toLowerCase()+"/status");
         mqttHelper2.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean b, String s) {
@@ -672,12 +654,8 @@ public class MapFragment extends Fragment implements
             }
 
             @Override
-            public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
-                Log.w("Is User : ",charger_id.toString()+"      "+mqttMessage.toString());
-
+            public void messageArrived(String topic, MqttMessage mqttMessage) {
                 updateItemArray(charger_id,mqttMessage.toString());
-//                System.out.println(itemArray.toString());
-                addMarkers();
             }
 
             @Override
@@ -686,22 +664,37 @@ public class MapFragment extends Fragment implements
         });
     }
 
-    private void updateItemArray(String charger_id, String charger_current_status) throws JSONException {
-        try{
-            for(int i=0; i < stations_object.length();i++){
-                charger_array = stations_object.getJSONObject(i);
-                final String chargerid = charger_array.getString("device_id").toLowerCase();
-                final String charger_previous_status = charger_array.getString("availability");
+    private void updateItemArray(String charger_id, String charger_current_status){
+        for(Charger c:chargingStations){
+            if (c.getDevice_id().equals(charger_id)) {
+                if (!c.getState().equals(charger_current_status)) {
+                    c.setState(charger_current_status);
+                    for (Marker m : markers) {
+                        if (m.getTag().equals(c.getDevice_id())) {
+                            if (selectedMarker.equals(c.getDevice_id())) {
+                                _charger_availability.setText(" " + c.getState());
+                                _charger_icon.setImageBitmap(getMarkerIcon(c.getType(), c.getState()));
+                            }
 
-                if (chargerid.equals(charger_id) && (charger_previous_status!=charger_current_status)){
-                    stations_object.getJSONObject(i).put("availability",charger_current_status);
+                            m.setIcon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon(c.getType(), c.getState())));
+                            return;
+                        }
+                    }
                 }
+                else
+                    return;
             }
-        }catch (JSONException e){
-            trackError(e);
-            e.printStackTrace();
         }
+        /*for(int i=0; i < stations_object.length();i++){
+            charger_array = stations_object.getJSONObject(i);
+            final String chargerid = charger_array.getString("device_id").toLowerCase();
+            final String charger_previous_status = charger_array.getString("availability");
 
+            if (chargerid.equals(charger_id) && (charger_previous_status!=charger_current_status)){
+                stations_object.getJSONObject(i).put("availability",charger_current_status);
+
+            }
+        }*/
     }
 
     private void addStateSubscriber() {
@@ -789,8 +782,8 @@ public class MapFragment extends Fragment implements
         progressDialog.setMessage("Start Charging...");
         progressDialog.setCancelable(false);
         progressDialog.show();
-        charging_marker =selectedMarker;
-        session.user_charging_station(selectedMarker);
+        charging_marker = selectedMarker;
+        session.user_charging_station(charging_marker);
 
         Handler h=new Handler();
         h.postDelayed(new Runnable() {
@@ -1143,6 +1136,9 @@ public class MapFragment extends Fragment implements
 
         destinatonMarker.setTag("Destination_Marker");
         destinatonMarker.showInfoWindow();
+
+        circles=new ArrayList<>();
+        createGeofence(location,"Charger_Location");
     }
 
     private void showDestinationSet(){
@@ -1161,6 +1157,8 @@ public class MapFragment extends Fragment implements
     private void checkRoute(final String vin, final LatLng start, final LatLng end, final String capacity, final String perc){
         showProgress("Getting directions...");
         GoogleAnalyticsService.getInstance().setAction("Map Functions","Routing","Routing Request");
+
+        System.out.println(vin+","+start+","+end+","+capacity+","+perc);
 
         final String origin= String.valueOf(start.latitude)+","+String.valueOf(start.longitude);
         final String destination= String.valueOf(end.latitude)+","+String.valueOf(end.longitude);
@@ -1616,6 +1614,9 @@ public class MapFragment extends Fragment implements
                 case "NA":
                     image=(resizeMapIcons("l2u",100,120));
                     break;
+                case "Pending...":
+                    image=(resizeMapIcons("l2u",100,120));
+                    break;
             }
         }
         else {
@@ -1627,6 +1628,9 @@ public class MapFragment extends Fragment implements
                     image=(resizeMapIcons("dcfb",100,120));
                     break;
                 case "NA":
+                    image=(resizeMapIcons("dcfu",100,120));
+                    break;
+                case "Pending...":
                     image=(resizeMapIcons("dcfu",100,120));
                     break;
             }
@@ -1734,5 +1738,11 @@ public class MapFragment extends Fragment implements
     public void onResume() {
         super.onResume();
         checkLocationPermission();
+        currentContext = getActivity().getApplicationContext();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
     }
 }

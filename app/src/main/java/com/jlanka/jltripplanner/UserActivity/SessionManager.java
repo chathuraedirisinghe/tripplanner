@@ -113,6 +113,7 @@ public class SessionManager {
 //        editor.putString(user_cartype, cartype);
 //        editor.commit();
 //    }
+
     public void user_charging_station(String selectedStation){
         editor.putString(user_chargingStation,selectedStation);
         editor.commit();
@@ -206,7 +207,11 @@ public class SessionManager {
         editor.commit();
     }
 
-    public String getVehicle(){
+    public String getVehicles(){
         return pref.getString(electric_vehicles,null);
+    }
+
+    public String getUser_chargingStation(){
+        return pref.getString(user_chargingStation,null);
     }
 }

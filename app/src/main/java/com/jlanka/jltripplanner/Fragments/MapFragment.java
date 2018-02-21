@@ -32,6 +32,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -182,6 +184,7 @@ public class MapFragment extends Fragment implements
     @BindView(R.id.fabNav) FloatingActionButton fabNav;
     @BindView(R.id.fabEnd) FloatingActionButton fabEnd;
     @BindView(R.id.floating_search_view) FloatingSearchView fsv;
+    @BindView(R.id.info_button) ImageButton info_button;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -294,12 +297,7 @@ public class MapFragment extends Fragment implements
             public void onClick(View view) {
                 getCurrentLocation();
                 if (mLastLocation!=null) {
-                    try {
-                        String vin=new JSONArray(session.getVehicles()).getJSONObject(0).getString("vin");
-                        checkRoute(vin, new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), destinatonMarker.getPosition(), "30", "30");
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
+                    requestRoute();
                 }
             }
         });
@@ -328,6 +326,54 @@ public class MapFragment extends Fragment implements
         fsv.setOnSearchListener(this);
 
         return mView;
+    }
+
+    private void requestRoute() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+        LayoutInflater inflater = getActivity().getLayoutInflater();
+        View view = inflater.inflate(R.layout.dialog_route, null);
+        EditText et = (EditText) view.findViewById(R.id.batt_cap);
+        TextView tv = (TextView) view.findViewById(R.id.route_err_message);
+        builder.setView(view);
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+        android.app.AlertDialog dialog = builder.create();
+        dialog.show();
+        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    if (et!=null && et.getText().length()>0){
+                        if (Integer.parseInt(et.getText().toString())<101){
+                            String vin = new JSONArray(session.getVehicles()).getJSONObject(0).getString("vin");
+                            checkRoute(vin, new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), destinatonMarker.getPosition(), "30", et.getText().toString());
+                            dialog.dismiss();
+                        }
+                        else{
+                            if (tv!=null) {
+                                tv.setText("Charge Perncentage cannot be greater than 100%");
+                                tv.setVisibility(View.VISIBLE);
+                            }
+                        }
+                    }
+                    else {
+                        if (tv!=null) {
+                            tv.setText("Charge Percentage required");
+                            tv.setVisibility(View.VISIBLE);
+                        }
+                    }
+                } catch (Exception e) {
+                    if (tv!=null) {
+                        tv.setText("Invalid input");
+                        tv.setVisibility(View.VISIBLE);
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -422,6 +468,13 @@ public class MapFragment extends Fragment implements
                         setCharging();
                     }
 
+                    info_button.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            setInfoWindow(c);
+                        }
+                    });
+
                     if (behavior.getState() == BottomSheetBehavior.STATE_COLLAPSED) {
                         expandBottomSheet();
                     }
@@ -452,6 +505,45 @@ public class MapFragment extends Fragment implements
 //            }
         }
         return false;
+    }
+
+    private void setInfoWindow(Charger charger) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+        LayoutInflater inflater = getActivity().getLayoutInflater();
+        View view = inflater.inflate(R.layout.dialog_charger_details, null);
+        ImageView icon=(ImageView) view.findViewById(R.id.dcd_icon);
+        TextView alias = (TextView) view.findViewById(R.id.dcd_alias);
+        TextView address = (TextView) view.findViewById(R.id.dcd_address);
+        TextView id = (TextView) view.findViewById(R.id.dcd_id);
+        TextView status = (TextView) view.findViewById(R.id.dcd_status);
+        TextView type = (TextView) view.findViewById(R.id.dcd_type);
+        TextView power = (TextView) view.findViewById(R.id.dcd_power);
+        TextView owner = (TextView) view.findViewById(R.id.dcd_owner);
+        TextView contact = (TextView) view.findViewById(R.id.dcd_contact);
+        TextView price = (TextView) view.findViewById(R.id.dcd_price);
+        TextView duration = (TextView) view.findViewById(R.id.dcd_duration);
+
+        icon.setImageBitmap(getMarkerIcon(charger.getType(), charger.getState()));
+        alias.setText(charger.getAlias());
+        address.setText(charger.getLocation());
+        id.setText(charger.getDevice_id());
+        status.setText(charger.getState());
+        type.setText(charger.getType());
+        power.setText(Math.round(charger.getPower())+"kW");
+        //owner.setText(charger.getAlias());
+        //contact.setText(charger.getAddress());
+        price.setText("Rs."+Math.round(charger.getPrice())+" kWh\u207B\u00B9");
+        //duration.setText(charger.getAddress());
+
+        builder.setView(view);
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        android.app.AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     @SuppressLint("MissingPermission")
@@ -617,10 +709,13 @@ public class MapFragment extends Fragment implements
 
                 Charger c=new Charger(
                         charger.getString("device_id"),
+                        charger.getString("alias"),
                         charger.getInt("owner"),
                         charger.getString("location"),
                         new LatLng(Double.parseDouble(charger.getString("lat")),Double.parseDouble(charger.getString("lng"))),
                         charger.getString("charger_type"),
+                        charger.getDouble("power"),
+                        charger.getDouble("unit_price"),
                         charger.getBoolean("availability")
                 );
 
@@ -655,6 +750,7 @@ public class MapFragment extends Fragment implements
 
             @Override
             public void messageArrived(String topic, MqttMessage mqttMessage) {
+                System.out.println(charger_id+","+mqttMessage.toString());
                 updateItemArray(charger_id,mqttMessage.toString());
             }
 
@@ -792,7 +888,7 @@ public class MapFragment extends Fragment implements
             public void run() {
                 if (isCharging!=true && progressDialog.isShowing()) {
                     progressDialog.dismiss();
-                    showDialog("Connection Error", "Station server connection timeout!", null, null, false);
+                    showDialog("Connection Error", "Station server connection timeout!", "chargeNow", new Object[]{selectedMarker}, false);
                 }
             }
         },5000);
@@ -832,7 +928,7 @@ public class MapFragment extends Fragment implements
             public void run() {
                 if (isCharging==true && progressDialog.isShowing()) {
                     progressDialog.dismiss();
-                    showDialog("Connection Error", "Station server connection timeout!", null, null, false);
+                    showDialog("Connection Error", "Station server connection timeout!", "stopCharge", null, false);
                 }
             }
         },5000);
@@ -1741,8 +1837,5 @@ public class MapFragment extends Fragment implements
         currentContext = getActivity().getApplicationContext();
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        super.onSaveInstanceState(savedInstanceState);
-    }
+
 }

@@ -94,7 +94,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Charger Status : "
-                        android:textSize="18sp"
+                        android:textSize="16sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -102,7 +102,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text=""
-                        android:textSize="18sp"/>
+                        android:textSize="16sp"/>
 
                 </LinearLayout>
 
@@ -118,7 +118,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Charger type : "
-                        android:textSize="18sp"
+                        android:textSize="16sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -126,7 +126,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text=""
-                        android:textSize="18sp"/>
+                        android:textSize="16sp"/>
 
                 </LinearLayout>
 
@@ -139,8 +139,9 @@
 
                 <ImageButton
                     android:id="@+id/info_button"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:paddingHorizontal="5dp"
                     android:background="@null"
                     app:srcCompat="@drawable/info" />
             </LinearLayout>

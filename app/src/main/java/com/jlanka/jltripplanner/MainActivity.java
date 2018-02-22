@@ -149,22 +149,22 @@ public class MainActivity extends AppCompatActivity
         userMob.setText(user_mobile);
 
 //        getProfileData(user_mobile);
+        System.out.println("Vehicle Details : " + vehicles);
 
         if(session.isFirstTimeLaunch()){
             startActivity(new Intent(MainActivity.this, WelcomeActivity.class));
             finish();
-        }else {
-            if(vehicles==null || vehicles.equals("[]")){
+        }else if(vehicles==null || vehicles.equals("[]")){
                 fragmentManager.beginTransaction().replace(R.id.content_frame, new VehicleFragment()).commit();
             }else{
                 if (mContent==null)
                     mContent= new MapFragment();
 
-                fragmentManager.beginTransaction().replace(R.id.content_frame, mContent).commit();
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+                    fragmentManager.beginTransaction().replace(R.id.content_frame, mContent).commit();
             }
         }
 
-    }
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -246,8 +246,7 @@ public class MainActivity extends AppCompatActivity
                 public void onResponse(String response) {
             System.out.println("Logout : "+response);
             try{
-                JSONObject jsonObject = new JSONObject(response);
-                    if(jsonObject.getString("error_code").equals("0") && jsonObject.getString("status").contains("successful")){
+                    if(new JSONObject(response).getString("status").contains("successful")){
                         session.logoutUser();
                     }else{
                         session.logoutUser();
@@ -375,7 +374,7 @@ public class MainActivity extends AppCompatActivity
                     // permission was granted, yay! Do the
                     // location-related task you need to do.
                     if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED) {
-                        fragmentManager.beginTransaction().replace(R.id.content_frame, new MapFragment()).addToBackStack("Map").commit();
+                        fragmentManager.beginTransaction().replace(R.id.content_frame, new MapFragment()).commit();
                     }
                 } else {
 
@@ -394,7 +393,6 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onResume() {
         isLocationEnabled();
-        System.out.println("RESUME-RESUME-RESUME-RESUME-RESUME-RESUME-RESUME-RESUME");
         super.onResume();
     }
 

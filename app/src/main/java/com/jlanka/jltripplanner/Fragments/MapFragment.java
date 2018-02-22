@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.DataSetObserver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -31,11 +32,17 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
+import android.widget.TextClock;
 import android.widget.TextView;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -115,7 +122,7 @@ public class MapFragment extends Fragment implements
     MQTTHelper mqttHelper;
     SessionManager session;
 
-    GoogleMap mGoogleMap;
+    static GoogleMap mGoogleMap;
     MapView mMapView;
     Location mLastLocation;
     Marker mCurrLocationMarker;
@@ -137,7 +144,7 @@ public class MapFragment extends Fragment implements
 
 //    public JSONArray itemArray =new JSONArray();
     public JSONArray stations_object = new JSONArray();
-    public static boolean isCharging,destinationSet=false;
+    public static boolean isCharging=false,destinationSet=false;
     private AlertDialog ad;
 
     JSONObject charger_array;
@@ -151,7 +158,6 @@ public class MapFragment extends Fragment implements
     //------------------------------------Thiwanka----------------------------------------------------------------
     private static final String PLACES_API_BASE = "https://maps.googleapis.com/maps/api/place/autocomplete/json";
     private static final String MAPS_API_BASE= "https://maps.googleapis.com/maps/api/geocode/json";
-    private static final String CHECK_ROUTING_STRING="http://yvk.rxn.mybluehost.me:8000/api/feasible_directions";
     private static final String ROUTING_STRING="https://maps.googleapis.com/maps/api/directions/json?";
     private ArrayList<Route> routes;
     private ArrayList<Circle> circles;
@@ -185,6 +191,7 @@ public class MapFragment extends Fragment implements
     @BindView(R.id.fabEnd) FloatingActionButton fabEnd;
     @BindView(R.id.floating_search_view) FloatingSearchView fsv;
     @BindView(R.id.info_button) ImageButton info_button;
+    @BindView(R.id.charger_loading_message) TextView chargerLoadingMessage;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -194,7 +201,7 @@ public class MapFragment extends Fragment implements
 
         currentContext = getActivity().getApplicationContext();
 
-        getCurrentLocation();
+        getCurrentLocation(true);
         container = (ViewGroup) getActivity().findViewById(R.id.cordinator_layout);
 
 
@@ -207,9 +214,9 @@ public class MapFragment extends Fragment implements
 //        getProfileData(user_mobile);
         //getCredit(user_mobile);
         if(session.isLoggedIn()) {
-
+            addStateSubscriber();
         }
-        addStateSubscriber();
+
 
         behavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
@@ -295,7 +302,7 @@ public class MapFragment extends Fragment implements
         fabRoute.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                getCurrentLocation();
+                getCurrentLocation(false);
                 if (mLastLocation!=null) {
                     requestRoute();
                 }
@@ -305,7 +312,7 @@ public class MapFragment extends Fragment implements
         fabNav.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                getCurrentLocation();
+                getCurrentLocation(false);
                 if (mLastLocation != null && routes != null)
                     sendRouteToGoogleApp(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), destinatonMarker.getPosition(), routes.get(0).getChargers());
             }
@@ -314,7 +321,7 @@ public class MapFragment extends Fragment implements
         fabEnd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                getCurrentLocation();
+                getCurrentLocation(false);
                 removeDestinationMarker();
                 fabEnd.hide();
                 fabNav.hide();
@@ -355,14 +362,14 @@ public class MapFragment extends Fragment implements
                         }
                         else{
                             if (tv!=null) {
-                                tv.setText("Charge Perncentage cannot be greater than 100%");
+                                tv.setText("Range on current charge cannot be greater than 150kms");
                                 tv.setVisibility(View.VISIBLE);
                             }
                         }
                     }
                     else {
                         if (tv!=null) {
-                            tv.setText("Charge Percentage required");
+                            tv.setText("Range on current charge required");
                             tv.setVisibility(View.VISIBLE);
                         }
                     }
@@ -393,7 +400,7 @@ public class MapFragment extends Fragment implements
         LocationMonitor.instance(getActivity().getApplicationContext()).stop();
     }
 
-    public void getCurrentLocation(){
+    public void getCurrentLocation(boolean zoomToLocation){
         LocationMonitor.instance(getActivity().getApplicationContext()).onChange(new Workable<GPSPoint>() {
             @Override
             public void work(GPSPoint gpsPoint) {
@@ -414,12 +421,14 @@ public class MapFragment extends Fragment implements
                     currentLongitude = Math.floor(mLastLocation.getLongitude()*10000)/10000;
 //            Log.w("Mewwa ",latLng.toString());
 //            Toast.makeText(getActivity(), "Location    " + currentLatitude+"     "+currentLongitude, Toast.LENGTH_SHORT).show();
-                    getResponse(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+                        getResponse(mLastLocation.getLatitude(), mLastLocation.getLongitude());
                 }else{
 //            Toast.makeText(getActivity(), "OK", Toast.LENGTH_SHORT).show();
                 }
 
-//        mGoogleMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+                if (zoomToLocation)
+                    mGoogleMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+
             }
         });
     }
@@ -430,7 +439,7 @@ public class MapFragment extends Fragment implements
             return false;
         }
         else {
-            getCurrentLocation();
+            getCurrentLocation(false);
             permissionLayout.setVisibility(View.GONE);
             return true;
         }
@@ -444,7 +453,7 @@ public class MapFragment extends Fragment implements
             selectedMarker = marker.getTitle();
             for (Charger c:chargingStations) {
                 if (c.getDevice_id().equals(marker.getTag())) {
-                    _charger_id.setText(c.getDevice_id());
+                    _charger_id.setText(c.getAlias());
 
                     if (c.getType().equals("AC"))
                         _charger_type.setText("Standard");
@@ -460,7 +469,7 @@ public class MapFragment extends Fragment implements
                         _chargenow_btn.setAlpha(1f);
                     }
                     else{
-                        _chargenow_btn.setEnabled(false);
+                        _chargenow_btn.setEnabled(true);
                         _chargenow_btn.setAlpha(0.75f);
                     }
 
@@ -522,6 +531,9 @@ public class MapFragment extends Fragment implements
         TextView contact = (TextView) view.findViewById(R.id.dcd_contact);
         TextView price = (TextView) view.findViewById(R.id.dcd_price);
         TextView duration = (TextView) view.findViewById(R.id.dcd_duration);
+        LinearLayout ownerLayout = (LinearLayout) view.findViewById(R.id.dcd_owner_layout);
+        LinearLayout contactLayout = (LinearLayout) view.findViewById(R.id.dcd_contact_layout);
+        ProgressBar progress = (ProgressBar) view.findViewById(R.id.dcd_progress);
 
         icon.setImageBitmap(getMarkerIcon(charger.getType(), charger.getState()));
         alias.setText(charger.getAlias());
@@ -529,13 +541,11 @@ public class MapFragment extends Fragment implements
         id.setText(charger.getDevice_id());
         status.setText(charger.getState());
         type.setText(charger.getType());
-        power.setText(Math.round(charger.getPower())+"kW");
-        //owner.setText(charger.getAlias());
-        //contact.setText(charger.getAddress());
+        power.setText(Math.round(charger.getPower())+" kW");
+
         price.setText("Rs."+Math.round(charger.getPrice())+" kWh\u207B\u00B9");
         //duration.setText(charger.getAddress());
 
-        builder.setView(view);
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -543,7 +553,48 @@ public class MapFragment extends Fragment implements
             }
         });
         android.app.AlertDialog dialog = builder.create();
+        dialog.setView(view);
         dialog.show();
+
+        int owner_id=charger.getOwner();
+
+        ServerConnector.getInstance(getActivity()).cancelRequest("GetOwner");
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+"profile/"+owner_id,null,Request.Method.GET,
+                new OnResponseListner() {
+                    @RequiresApi(api = Build.VERSION_CODES.M)
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            // Create a JSON object hierarchy from the results
+                            JSONObject responseObject = new JSONObject(response);
+                            System.out.println(response);
+                            if (responseObject.has("error")) {
+                                showDialog("Error", responseObject.getString("error"), "GetOwner",
+                                        new Object[]{owner_id}, false);
+                            }
+                            else {
+                                progress.setVisibility(View.GONE);
+                                ownerLayout.setVisibility(View.VISIBLE);
+                                contactLayout.setVisibility(View.VISIBLE);
+                                owner.setText(responseObject.getString("first_name")+" "+responseObject.getString("last_name"));
+                                contact.setText("0"+responseObject.getString("contact_number"));
+                                hideProgress();
+                            }
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                },
+                new OnErrorListner() {
+                    @RequiresApi(api = Build.VERSION_CODES.M)
+                    @Override
+                    public void onError(String error, JSONObject obj) {
+                        showDialog("Error", error, "GetOwner",
+                                new Object[]{owner_id}, false);
+                    }
+                },"GetOwner");
     }
 
     @SuppressLint("MissingPermission")
@@ -569,7 +620,15 @@ public class MapFragment extends Fragment implements
             LocationManager locationManager = (LocationManager)getActivity().getSystemService(Context.LOCATION_SERVICE);
             mLastLocation = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
             mGoogleMap.setMyLocationEnabled(true);
-            mGoogleMap.moveCamera( CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()) , 14.0f) );
+
+            if (mLastLocation!=null) {
+                mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), 14.0f));
+            }
+
+            if (markers!=null){
+                markers=new ArrayList<>();
+                addMarkers(chargingStations);
+            }
         }
 
         //---------------Thiwanka-----------------
@@ -618,7 +677,7 @@ public class MapFragment extends Fragment implements
         System.out.println("Location Distance : "+ distance);
 
         if(distance>5000.0){
-            //getResponse(nextlatitude,nextlongitude);
+            getResponse(nextlatitude,nextlongitude);
         }else{
             //nothing
         }
@@ -653,6 +712,8 @@ public class MapFragment extends Fragment implements
     }
 
     public void getResponse(final double lat, final double lng){
+        System.out.println("+++++++++++++++++++++++++++++++++++++++++");
+        chargerLoadingMessage.setVisibility(View.VISIBLE);
         String charging_address = "charging_stations/";
 
         ServerConnector.getInstance(getActivity()).cancelRequest("ChargingStations");
@@ -690,6 +751,9 @@ public class MapFragment extends Fragment implements
         if (markers==null)
             markers=new ArrayList<>();
 
+        if (chargersToDraw.size()<1)
+            chargerLoadingMessage.setVisibility(View.GONE);
+
         for (Charger c:chargersToDraw) {
             Marker chargerMarker = mGoogleMap.addMarker(c.getMarkerOptions());
             chargerMarker.setIcon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon(c.getType(), c.getState())));
@@ -704,29 +768,34 @@ public class MapFragment extends Fragment implements
         try{
             ArrayList<Charger>chargersToDraw=new ArrayList<>();
             for(int i=0; i < stations.length();i++){
-
-                JSONObject charger = stations.getJSONObject(i);
-
-                Charger c=new Charger(
-                        charger.getString("device_id"),
-                        charger.getString("alias"),
-                        charger.getInt("owner"),
-                        charger.getString("location"),
-                        new LatLng(Double.parseDouble(charger.getString("lat")),Double.parseDouble(charger.getString("lng"))),
-                        charger.getString("charger_type"),
-                        charger.getDouble("power"),
-                        charger.getDouble("unit_price"),
-                        charger.getBoolean("availability")
-                );
-
                 if (chargingStations==null)
                     chargingStations=new ArrayList<>();
 
-                if (!chargingStations.contains(c)) {
+                JSONObject charger = stations.getJSONObject(i);
+
+                boolean found=false;
+                for (Charger cc:chargingStations){
+                    if (cc.getDevice_id().equals(charger.getString("device_id")))
+                        found=true;
+                }
+
+                if (!found) {
+                    Charger c = new Charger(
+                            charger.getString("device_id"),
+                            charger.getString("alias"),
+                            charger.getInt("owner"),
+                            charger.getString("location"),
+                            new LatLng(Double.parseDouble(charger.getString("lat")), Double.parseDouble(charger.getString("lng"))),
+                            charger.getString("charger_type"),
+                            charger.getDouble("power"),
+                            charger.getDouble("unit_price"),
+                            charger.getBoolean("availability")
+                    );
+
                     chargingStations.add(c);
                     chargersToDraw.add(c);
+                    Log.e("Charger ID", c.getDevice_id());
                 }
-                Log.e("Charger ID",c.getDevice_id());
             }
             addMarkers(chargersToDraw);
         }catch (JSONException e){
@@ -761,24 +830,30 @@ public class MapFragment extends Fragment implements
     }
 
     private void updateItemArray(String charger_id, String charger_current_status){
-        for(Charger c:chargingStations){
-            if (c.getDevice_id().equals(charger_id)) {
-                if (!c.getState().equals(charger_current_status)) {
-                    c.setState(charger_current_status);
-                    for (Marker m : markers) {
-                        if (m.getTag().equals(c.getDevice_id())) {
-                            if (selectedMarker.equals(c.getDevice_id())) {
-                                _charger_availability.setText(" " + c.getState());
-                                _charger_icon.setImageBitmap(getMarkerIcon(c.getType(), c.getState()));
-                            }
 
-                            m.setIcon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon(c.getType(), c.getState())));
-                            return;
+        if (chargingStations!=null) {
+            for (Charger c : chargingStations) {
+                if (c.getDevice_id().equals(charger_id)) {
+                    if (!c.getState().equals(charger_current_status)) {
+                        c.setState(charger_current_status);
+                        System.out.println(markers.size());
+                        for (Marker m : markers) {
+                            System.out.println(charger_current_status+"%"+c.getState());
+                            if (m.getTag().equals(c.getDevice_id())) {
+                                m.setIcon(BitmapDescriptorFactory.fromBitmap(getMarkerIcon(c.getType(), c.getState())));
+                                chargerLoadingMessage.setVisibility(View.INVISIBLE);
+
+                                if (selectedMarker.equals(c.getDevice_id())) {
+                                    _charger_availability.setText(" " + c.getState());
+                                    _charger_icon.setImageBitmap(getMarkerIcon(c.getType(), c.getState()));
+                                }
+
+                                return;
+                            }
                         }
-                    }
+                    } else
+                        return;
                 }
-                else
-                    return;
             }
         }
         /*for(int i=0; i < stations_object.length();i++){
@@ -810,7 +885,7 @@ public class MapFragment extends Fragment implements
                 if(mqttMessage.toString().equals("charging")){
                     setCharging();
                 }else if(mqttMessage.toString().contains("busy") || mqttMessage.toString().contains("Error!")){
-                    notifyOnError(mqttMessage.toString().replace("Error!",""));
+                    notifyOnError(mqttMessage.toString().replace("Error! ",""));
                 }else if(mqttMessage.toString().equals("not charging")){
                     setFree();
                 }
@@ -824,6 +899,7 @@ public class MapFragment extends Fragment implements
 
     private void setFree() {
         isCharging = false;
+        hideProgress();
         if(progressDialog!=null && progressDialog.isShowing()){
             progressDialog.dismiss();
         }
@@ -838,6 +914,7 @@ public class MapFragment extends Fragment implements
     }
 
     private void notifyOnError(String s) {
+        hideProgress();
         if(progressDialog!=null && progressDialog.isShowing()){
             progressDialog.dismiss();
         }
@@ -871,13 +948,53 @@ public class MapFragment extends Fragment implements
 
     }
 
-    public void chargeNow(String selectedMarker){
-        progressDialog= new ProgressDialog(getActivity());
-        progressDialog.setProgressStyle(ProgressDialog.THEME_DEVICE_DEFAULT_DARK);
-        progressDialog.setIndeterminate(true);
-        progressDialog.setMessage("Start Charging...");
-        progressDialog.setCancelable(false);
-        progressDialog.show();
+    public void chargeNow(String selectedMarker) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+        LayoutInflater inflater = getActivity().getLayoutInflater();
+        View view = inflater.inflate(R.layout.dialog_select_vehicle, null);
+
+        Spinner spinner = (Spinner) view.findViewById(R.id.vehicle_spinner);
+        ArrayList<String> ar = new ArrayList<String>();
+        String reg_num;
+        try {
+
+            JSONArray obj = new JSONArray(user.get(SessionManager.electric_vehicles));
+            for (int i = 0; i < obj.length(); i++) {
+                JSONObject vehicle_object = obj.getJSONObject(i);
+                final String model = vehicle_object.getString("model");
+                final String reg_no = vehicle_object.getString("reg_no");
+                reg_num=reg_no;
+                ar.add(model + "   " + reg_no);
+            }
+        } catch (Throwable t) {
+        }
+
+        String[] myVehicle = ar.toArray(new String[0]);
+        ArrayAdapter<String> myVehicleGUIArray = new ArrayAdapter<String>(getActivity(), android.R.layout.select_dialog_item, myVehicle);
+        myVehicleGUIArray.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        myVehicleGUIArray.notifyDataSetChanged();
+        spinner.setAdapter(myVehicleGUIArray);
+
+        builder.setView(view);
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                startCharging();
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        android.app.AlertDialog dialog = builder.create();
+        dialog.show();
+        dialog.getButton(dialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.colorPrimaryDark));
+    }
+
+    private void startCharging(String vehicle_id){
+        showProgress("Starting Charging Session");
         charging_marker = selectedMarker;
         session.user_charging_station(charging_marker);
 
@@ -886,8 +1003,8 @@ public class MapFragment extends Fragment implements
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void run() {
-                if (isCharging!=true && progressDialog.isShowing()) {
-                    progressDialog.dismiss();
+                if (isCharging!=true && progressBar.getVisibility()==View.VISIBLE) {
+                    hideProgress();
                     showDialog("Connection Error", "Station server connection timeout!", "chargeNow", new Object[]{selectedMarker}, false);
                 }
             }
@@ -899,7 +1016,8 @@ public class MapFragment extends Fragment implements
             payload.put("bysms", 0);
             payload.put("message", "ev chg "+ charging_marker +" "+user_pin);
             chargingDuration=System.currentTimeMillis();
-            GoogleAnalyticsService.getInstance().setAction("Charging","Start Charging","");
+            System.out.println(payload);
+            GoogleAnalyticsService.getInstance().setAction("Charging","Starting Charging Session",selectedMarker);
         } catch (JSONException e) {
             // TODO Auto-generated catch block
             trackError(e);
@@ -914,20 +1032,15 @@ public class MapFragment extends Fragment implements
     }
 
     public void stopCharge(){
-        progressDialog= new ProgressDialog(getActivity());
-        progressDialog.setProgressStyle(ProgressDialog.THEME_DEVICE_DEFAULT_DARK);
-        progressDialog.setIndeterminate(true);
-        progressDialog.setMessage("Stopping...");
-        progressDialog.setCancelable(false);
-        progressDialog.show();
+        showProgress("Stopping");
 
         Handler h=new Handler();
         h.postDelayed(new Runnable() {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void run() {
-                if (isCharging==true && progressDialog.isShowing()) {
-                    progressDialog.dismiss();
+                if (isCharging==true && progressBar.getVisibility()==View.VISIBLE) {
+                    hideProgress();
                     showDialog("Connection Error", "Station server connection timeout!", "stopCharge", null, false);
                 }
             }
@@ -988,7 +1101,7 @@ public class MapFragment extends Fragment implements
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public void onSearchTextChanged(String oldQuery,String newQuery) {
-        getCurrentLocation();
+        getCurrentLocation(false);
         if (mLastLocation!=null)
             getAddressSuggestions(newQuery);
         else
@@ -1232,9 +1345,6 @@ public class MapFragment extends Fragment implements
 
         destinatonMarker.setTag("Destination_Marker");
         destinatonMarker.showInfoWindow();
-
-        circles=new ArrayList<>();
-        createGeofence(location,"Charger_Location");
     }
 
     private void showDestinationSet(){
@@ -1317,6 +1427,7 @@ public class MapFragment extends Fragment implements
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onError(String error, JSONObject obj) {
+                System.out.println(obj);
                 showDialog("Routing Error", error, "checkRoute",
                         new Object[]{vin, start, end, capacity, perc}, false);
             }
@@ -1833,8 +1944,9 @@ public class MapFragment extends Fragment implements
     @Override
     public void onResume() {
         super.onResume();
+        collapseBottomSheet();
         checkLocationPermission();
-        currentContext = getActivity().getApplicationContext();
+        getCurrentLocation(true);
     }
 
 

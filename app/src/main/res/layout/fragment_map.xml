@@ -127,4 +127,16 @@
         </LinearLayout>
     </RelativeLayout>
 
+    <TextView
+        android:id="@+id/charger_loading_message"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:layout_gravity="bottom"
+        android:textColor="@android:color/white"
+        android:background="@android:color/holo_red_light"
+        android:text="Chargers Loading..." />
+
+
 </android.support.design.widget.CoordinatorLayout>

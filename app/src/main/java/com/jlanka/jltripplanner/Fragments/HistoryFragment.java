@@ -95,8 +95,6 @@ public class HistoryFragment extends Fragment {
                 alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
-                        Intent i = new Intent(getActivity(), HistoryFragment.class);
-                        startActivity(i);
                     }
                 });
                 alertDialog.show();

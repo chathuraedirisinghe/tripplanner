@@ -190,36 +190,16 @@ public class LoginActivity extends AppCompatActivity {
                 if(pd.isShowing()){
                     pd.dismiss();
                 }
-
                 try {
                     JSONObject jsonResponse = new JSONObject(response);
                     Log.w("Login Response   ", String.valueOf(jsonResponse));
-                    String error = jsonResponse.getString("error_code");
                     String status = jsonResponse.getString("status");
                     String id = jsonResponse.getString("id");
 
-                    if(error.equals("0")){
+                    if(status.equals("Login success")){
                         GoogleAnalyticsService.getInstance().setUser(username,"Login");
                         getUserDetails(id, password);
 
-                    } else if(error.equals("1") && (status.contains("verify"))){
-                        final AlertDialog ad = new AlertDialog.Builder(LoginActivity.this).create();
-                        ad.setTitle("Verify Account");
-                        ad.setMessage("Please check your email and verify account.");
-                        ad.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        if(ad.isShowing()) {
-                                            dialog.dismiss();
-                                            send_verification_email();
-                                        }
-                                    }
-                                });
-                        ad.show();
-
-//                      not registered setMobilenumber(mobNo); modal.show(manager, "My Cart");
-                    }else if(error.equals("1") && (status.contains("incorrect"))) {
-                        onLoginFailed();
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -273,6 +253,7 @@ public class LoginActivity extends AppCompatActivity {
                             String email = user_data.getString("email");
                             String mob = user_data.getString("contact_number");
                             JSONArray vehicles = user_data.getJSONArray("electric_vehicles");
+                            System.out.println("Vehicles : " + vehicles);
 
 //                    if(vehicle.getString(0).equals(null)){
 //                        vehicle = "default";

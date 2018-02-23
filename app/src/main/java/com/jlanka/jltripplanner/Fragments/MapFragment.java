@@ -203,6 +203,7 @@ public class MapFragment extends Fragment implements
     @BindView(R.id.floating_search_view) FloatingSearchView fsv;
     @BindView(R.id.info_button) ImageButton info_button;
     @BindView(R.id.charger_loading_message) TextView chargerLoadingMessage;
+    @BindView(R.id.bd_refresh) ImageButton refreshButton;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -264,28 +265,6 @@ public class MapFragment extends Fragment implements
             }
         });
 
-
-        _chargenow_btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                chargeNow(_charger_id.getTag().toString());
-            }
-        });
-
-        _get_direction.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getDirection(latLng.latitude,latLng.longitude);
-            }
-        });
-
-        _stop_charge.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                stopCharge(charging_session_id);
-            }
-        });
-
         //----------------------Thiwanka--------------------------------------
         GoogleAnalyticsService.getInstance().setScreenName(this.getClass().getSimpleName());
         chargers=new ArrayList<>();
@@ -343,6 +322,13 @@ public class MapFragment extends Fragment implements
         });
 
         fsv.setOnQueryChangeListener(this);
+        fsv.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus)
+                    fsv.hideProgress();
+            }
+        });
         fsv.setOnSearchListener(this);
 
         return mView;
@@ -453,13 +439,13 @@ public class MapFragment extends Fragment implements
 
     @Override
     public boolean onMarkerClick(Marker marker) {
+        selectedMarker = marker.getTitle();
         if (marker.getTag().equals("Destination_Marker"))
             marker.showInfoWindow();
         else if (!marker.getTag().equals("Polyline_InfoWindow")) {
 
             for (Charger c:chargingStations) {
                 if (c.getDevice_id().equals(marker.getTag())) {
-                    selectedMarker = c.getDevice_id();
                     _charger_id.setText(c.getAlias());
                     _charger_id.setTag(c.getDevice_id());
 
@@ -498,6 +484,38 @@ public class MapFragment extends Fragment implements
                     if (behavior.getState() == BottomSheetBehavior.STATE_COLLAPSED) {
                         expandBottomSheet();
                     }
+
+                    refreshButton.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            onMarkerClick(marker);
+                        }
+                    });
+
+                    _chargenow_btn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            chargeNow(_charger_id.getTag().toString());
+                        }
+                    });
+
+                    _get_direction.setOnClickListener(new View.OnClickListener() {
+                        @RequiresApi(api = Build.VERSION_CODES.M)
+                        @Override
+                        public void onClick(View v) {
+                            if (mLastLocation!=null)
+                                sendRouteToGoogleApp(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()),c.getPosition(),null);
+                            else
+                                showDialog("Location","Unable to retrieve location","getCurrentLocation",new Object[]{false},false);
+                        }
+                    });
+
+                    _stop_charge.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            stopCharge(charging_session_id);
+                        }
+                    });
                     return false;
                 }
             }
@@ -613,6 +631,7 @@ public class MapFragment extends Fragment implements
         googleMap.getUiSettings().setMapToolbarEnabled(false);
         mGoogleMap.setLatLngBoundsForCameraTarget(new LatLngBounds(new LatLng(5.774857, 79.579479),new LatLng(9.876957, 81.767971)));
         mGoogleMap.setMinZoomPreference(7f);
+        fabLegend.setVisibility(View.VISIBLE);
         fsv.setVisibility(View.VISIBLE);
         mGoogleMap.setPadding(0,getMarginInDp(55),getMarginInDp(2),0);
 
@@ -850,7 +869,7 @@ public class MapFragment extends Fragment implements
                                     Location.distanceBetween( c.getPosition().latitude, c.getPosition().longitude,
                                             mLastLocation.getLatitude(), mLastLocation.getLongitude(), distance);
 
-                                    if (c.getState().equals("Available") && distance[0] < 50 ) {
+                                    if (c.getState().equals("Available") && distance[0] < 100 ) {
                                         _chargenow_btn.setEnabled(true);
                                         _chargenow_btn.setAlpha(1f);
                                     }
@@ -1103,21 +1122,6 @@ public class MapFragment extends Fragment implements
         MQTTPublisher mqttPublisher = new MQTTPublisher(getActivity().getApplicationContext(),"tcp://development.enetlk.com:1883");
         mqttPublisher.publishToTopic(payload.toString(),getActivity().getApplicationContext());
         collapseBottomSheet();
-    }
-
-    public void getDirection(double latitude, double longitude){
-        String markerlatitude = String.valueOf(selectedMarker_latLng.latitude);
-        String markerlongitude = String.valueOf(selectedMarker_latLng.longitude);
-
-        GoogleAnalyticsService.getInstance().setAction("Map Functions","Navigate","Navigate to Charger");
-
-        StringBuilder sb =new StringBuilder("http://www.google.lk/maps/dir/");
-        sb.append(latitude+","+longitude);
-        sb.append("/");
-        sb.append(markerlatitude+","+markerlongitude);
-        Uri uriUrl = Uri.parse(String.valueOf(sb));
-        Intent launchBrowser = new Intent(Intent.ACTION_VIEW, uriUrl);
-        startActivity(launchBrowser);
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2038,7 +2042,7 @@ public class MapFragment extends Fragment implements
                                     ch_id.setText(ch.getDevice_id());
                                     ch_type.setText(ch.getType());
                                     ch_power.setText(ch.getPower() + " kWh");
-                                    rec_total.setText(""+obj.getDouble("cost"));
+                                    rec_total.setText("Rs."+Math.round(obj.getDouble("cost")));
 
                                     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
                                     Date startDate = simpleDateFormat.parse(obj.getString("start_datetime"));

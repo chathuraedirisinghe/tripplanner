@@ -159,8 +159,8 @@ public class LoginActivity extends AppCompatActivity {
             _usernameText.setError(null);
         }
 
-        if (password.isEmpty() || password.length() < 3 || password.length() > 10) {
-            _passwordText.setError("Pin number should between 3 and 6 numeric characters");
+        if (password.isEmpty() || password.length() < 4 || password.length() > 6) {
+            _passwordText.setError("Pin number should between 4 and 6 numeric characters");
             valid = false;
         } else {
             _passwordText.setError(null);

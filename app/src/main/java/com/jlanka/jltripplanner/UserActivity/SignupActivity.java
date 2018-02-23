@@ -19,6 +19,7 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -253,6 +254,7 @@ public class SignupActivity extends Activity {
 
     public boolean validate() {
         boolean valid = true;
+        Pattern sPattern = Pattern.compile("07[\\d]{8}");
         String username = _username.getText().toString();
         String first_name = _fname.getText().toString();
         String last_name = _lname.getText().toString();
@@ -281,7 +283,11 @@ public class SignupActivity extends Activity {
             _lname.setError(null);
         }
 
-        if(user_mobile.isEmpty() || !Patterns.PHONE.matcher(user_mobile).matches() || user_mobile.length()>10 || user_mobile.length()<10){
+        if (!sPattern.matcher(user_mobile).matches()){
+            _mobileText.setError("Not a valid phone number");
+            valid = false;
+        }
+        else if(user_mobile.isEmpty() || !Patterns.PHONE.matcher(user_mobile).matches() || user_mobile.length()>10 || user_mobile.length()<10 ){
             _mobileText.setError("Length should be 10 digits");
             valid = false;
         }else{

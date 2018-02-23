@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:paddingBottom="0dp"
     android:paddingLeft="20dp"
     android:paddingRight="20dp"
-    android:paddingTop="20dp"
-    android:paddingBottom="20dp"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:paddingTop="20dp">
 
 
     <LinearLayout
@@ -42,11 +42,11 @@
 
             <TextView
                 android:id="@+id/dcd_address"
-                android:textAlignment="center"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="10dp"
-                android:text="123 Battraramulla rd, Batharamulla" />
+                android:text="123 Battraramulla rd, Batharamulla"
+                android:textAlignment="center"
+                android:textSize="10dp" />
         </LinearLayout>
 
     </LinearLayout>
@@ -84,11 +84,11 @@
 
             <TextView
                 android:id="@+id/textView6"
-                android:textStyle="bold"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Charger Type" />
+                android:text="Charger Type"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/dcd_type"
@@ -104,11 +104,11 @@
             android:orientation="horizontal">
 
             <TextView
-                android:textStyle="bold"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Charger Status" />
+                android:text="Charger Status"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/dcd_status"
@@ -144,36 +144,36 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="10dp"
         android:layout_marginBottom="10dp"
+        android:layout_marginTop="10dp"
         android:layout_weight="1"
         android:orientation="vertical">
 
         <TextView
-            android:textAlignment="center"
-            android:background="@color/colorPrimaryDark"
-            android:textColor="@android:color/white"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Owner"
-            android:textStyle="bold"
-            android:textSize="18sp"
+            android:background="@color/colorPrimaryDark"
             android:paddingBottom="5dp"
-            android:paddingTop="5dp" />
+            android:paddingTop="5dp"
+            android:text="Owner"
+            android:textAlignment="center"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <ProgressBar
             android:id="@+id/dcd_progress"
             style="?android:attr/progressBarStyleHorizontal"
-            android:indeterminateOnly="true"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:indeterminateOnly="true" />
 
         <LinearLayout
             android:id="@+id/dcd_owner_layout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <TextView
                 android:layout_width="match_parent"
@@ -194,8 +194,8 @@
             android:id="@+id/dcd_contact_layout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <TextView
                 android:layout_width="match_parent"
@@ -234,10 +234,10 @@
             android:id="@+id/dcd_price"
             android:layout_width="wrap_content"
             android:layout_height="80dp"
+            android:layout_marginBottom="10dp"
             android:layout_weight="1"
             android:background="@drawable/textview_rounded_corner"
             android:elevation="5dp"
-            android:layout_marginBottom="10dp"
             android:gravity="center"
             android:shadowColor="@color/colorPrimaryDark"
             android:text="Rs. 75/unit"
@@ -249,8 +249,8 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="2dp"
-        android:background="#63BB46"
-        android:layout_marginBottom="5dp"/>
+        android:layout_marginBottom="5dp"
+        android:background="#63BB46" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -260,7 +260,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Approximate charging time : " />
+            android:text="Approx. charging time : " />
 
         <TextView
             android:id="@+id/dcd_duration"
@@ -277,7 +277,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Approximate charging cost : " />
+            android:text="Approx. charging cost : " />
 
         <TextView
             android:id="@+id/dcd_cost"
@@ -285,5 +285,4 @@
             android:layout_height="wrap_content"
             android:text="Rs.1500.00" />
     </LinearLayout>
-
 </LinearLayout>

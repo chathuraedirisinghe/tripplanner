@@ -15,14 +15,15 @@ import com.google.android.gms.maps.model.internal.zzp;
  */
 
 public class Charger {
-    private int owner;
+    private int id,owner;
     private String device_id,alias,location,type;
     private LatLng position;
     private double power,price;
     private boolean available;
     private String state;
 
-    public Charger(String device_id,String alias, int owner, String location, LatLng position, String type,double power,double price, boolean available) {
+    public Charger(int id,String device_id,String alias, int owner, String location, LatLng position, String type,double power,double price, boolean available) {
+        this.id=id;
         this.owner = owner;
         this.alias=alias;
         this.device_id = device_id;
@@ -34,6 +35,8 @@ public class Charger {
         this.available = available;
         this.state="Pending...";
     }
+
+    public int getId() { return id; }
     public void setState(String state) { this.state=state; }
 
     public int getOwner() {

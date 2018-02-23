@@ -2,6 +2,7 @@ package com.jlanka.jltripplanner.Fragments;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.app.TaskStackBuilder;
@@ -18,6 +19,7 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
@@ -76,10 +78,18 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -122,7 +132,7 @@ public class MapFragment extends Fragment implements
     MQTTHelper mqttHelper;
     SessionManager session;
 
-    static GoogleMap mGoogleMap;
+    GoogleMap mGoogleMap;
     MapView mMapView;
     Location mLastLocation;
     Marker mCurrLocationMarker;
@@ -159,6 +169,7 @@ public class MapFragment extends Fragment implements
     private static final String PLACES_API_BASE = "https://maps.googleapis.com/maps/api/place/autocomplete/json";
     private static final String MAPS_API_BASE= "https://maps.googleapis.com/maps/api/geocode/json";
     private static final String ROUTING_STRING="https://maps.googleapis.com/maps/api/directions/json?";
+    private static String charging_session_id;
     private ArrayList<Route> routes;
     private ArrayList<Circle> circles;
     private ArrayList<Polyline> routeLines;
@@ -242,9 +253,11 @@ public class MapFragment extends Fragment implements
 
             @Override
             public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+                int messageMargin=getMarginInDp((int)Math.round(180*slideOffset));
                 int bottomMargin=getMarginInDp((int)Math.round(180*slideOffset)+10);
                 int endBottomMargin=getMarginInDp((int)Math.round(180*slideOffset)+70);
 
+                setMargins(chargerLoadingMessage,0,0,0,messageMargin);
                 setMargins(fabRoute ,0,0,8,bottomMargin);
                 setMargins(fabNav ,0,0,8,bottomMargin);
                 setMargins(fabEnd ,0,0,8,endBottomMargin);
@@ -255,7 +268,7 @@ public class MapFragment extends Fragment implements
         _chargenow_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                chargeNow(selectedMarker);
+                chargeNow(_charger_id.getTag().toString());
             }
         });
 
@@ -269,7 +282,7 @@ public class MapFragment extends Fragment implements
         _stop_charge.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stopCharge();
+                stopCharge(charging_session_id);
             }
         });
 
@@ -408,9 +421,6 @@ public class MapFragment extends Fragment implements
                 mLastLocation.setLatitude(Double.parseDouble(gpsPoint.getLatitude().toString()));
                 mLastLocation.setLongitude(Double.parseDouble(gpsPoint.getLongitude().toString()));
 
-                mylatitude=mLastLocation.getLatitude();
-                mylongitude=mLastLocation.getLongitude();
-
                 if (mCurrLocationMarker != null) {
                     mCurrLocationMarker.remove();
                 }
@@ -425,10 +435,6 @@ public class MapFragment extends Fragment implements
                 }else{
 //            Toast.makeText(getActivity(), "OK", Toast.LENGTH_SHORT).show();
                 }
-
-                if (zoomToLocation)
-                    mGoogleMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
-
             }
         });
     }
@@ -450,26 +456,31 @@ public class MapFragment extends Fragment implements
         if (marker.getTag().equals("Destination_Marker"))
             marker.showInfoWindow();
         else if (!marker.getTag().equals("Polyline_InfoWindow")) {
-            selectedMarker = marker.getTitle();
+
             for (Charger c:chargingStations) {
                 if (c.getDevice_id().equals(marker.getTag())) {
+                    selectedMarker = c.getDevice_id();
                     _charger_id.setText(c.getAlias());
+                    _charger_id.setTag(c.getDevice_id());
 
                     if (c.getType().equals("AC"))
                         _charger_type.setText("Standard");
                     else
                         _charger_type.setText("Rapid");
 
-                    //              _charger_address.setText("Address : "+charger_address);
                     _charger_availability.setText(" " + c.getState());
                     _charger_icon.setImageBitmap(getMarkerIcon(c.getType(), c.getState()));
 
-                    if (c.getState().equals("Available")) {
+                    float[] distance = new float[2];
+                    Location.distanceBetween( marker.getPosition().latitude, marker.getPosition().longitude,
+                            mLastLocation.getLatitude(), mLastLocation.getLongitude(), distance);
+
+                    if (c.getState().equals("Available") && distance[0] < 50 ) {
                         _chargenow_btn.setEnabled(true);
                         _chargenow_btn.setAlpha(1f);
                     }
                     else{
-                        _chargenow_btn.setEnabled(true);
+                        _chargenow_btn.setEnabled(false);
                         _chargenow_btn.setAlpha(0.75f);
                     }
 
@@ -490,28 +501,6 @@ public class MapFragment extends Fragment implements
                     return false;
                 }
             }
-
-//
-//            selectedMarker_latLng = marker.getPosition();
-//            Log.d("Selected Marker", String.valueOf(selectedMarker));
-//            Log.d("Stations Array Up : ", stations_object.toString());
-//            try {
-//                for (int i = 0; i < stations_object.length(); i++) {
-//                    JSONObject charger_array = stations_object.getJSONObject(i);
-//                    final String chargerid = charger_array.getString("device_id");
-//                    if (chargerid.equals(selectedMarker)) {
-//                        charger_type = charger_array.getString("charger_type");
-//                        charger_address = charger_array.getString("location");
-//                        charger_available = charger_array.getString("availability");
-//                    }
-//                }
-
-
-
-//            } catch (JSONException e) {
-//                trackError(e);
-//                e.printStackTrace();
-//            }
         }
         return false;
     }
@@ -531,6 +520,8 @@ public class MapFragment extends Fragment implements
         TextView contact = (TextView) view.findViewById(R.id.dcd_contact);
         TextView price = (TextView) view.findViewById(R.id.dcd_price);
         TextView duration = (TextView) view.findViewById(R.id.dcd_duration);
+        TextView cost = (TextView) view.findViewById(R.id.dcd_cost);
+
         LinearLayout ownerLayout = (LinearLayout) view.findViewById(R.id.dcd_owner_layout);
         LinearLayout contactLayout = (LinearLayout) view.findViewById(R.id.dcd_contact_layout);
         ProgressBar progress = (ProgressBar) view.findViewById(R.id.dcd_progress);
@@ -544,7 +535,15 @@ public class MapFragment extends Fragment implements
         power.setText(Math.round(charger.getPower())+" kW");
 
         price.setText("Rs."+Math.round(charger.getPrice())+" kWh\u207B\u00B9");
-        //duration.setText(charger.getAddress());
+
+        if (charger.getType().equals("AC")) {
+            duration.setText("3½ to 4 hrs");
+            cost.setText("Rs.360 - Rs.450");
+        }
+        else{
+            duration.setText("1 hr");
+            cost.setText("Rs.750 - Rs.900");
+        }
 
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
@@ -578,6 +577,7 @@ public class MapFragment extends Fragment implements
                                 contactLayout.setVisibility(View.VISIBLE);
                                 owner.setText(responseObject.getString("first_name")+" "+responseObject.getString("last_name"));
                                 contact.setText("0"+responseObject.getString("contact_number"));
+
                                 hideProgress();
                             }
 
@@ -712,7 +712,6 @@ public class MapFragment extends Fragment implements
     }
 
     public void getResponse(final double lat, final double lng){
-        System.out.println("+++++++++++++++++++++++++++++++++++++++++");
         chargerLoadingMessage.setVisibility(View.VISIBLE);
         String charging_address = "charging_stations/";
 
@@ -781,6 +780,7 @@ public class MapFragment extends Fragment implements
 
                 if (!found) {
                     Charger c = new Charger(
+                            charger.getInt("id"),
                             charger.getString("device_id"),
                             charger.getString("alias"),
                             charger.getInt("owner"),
@@ -846,6 +846,15 @@ public class MapFragment extends Fragment implements
                                 if (selectedMarker.equals(c.getDevice_id())) {
                                     _charger_availability.setText(" " + c.getState());
                                     _charger_icon.setImageBitmap(getMarkerIcon(c.getType(), c.getState()));
+                                    float[] distance = new float[2];
+                                    Location.distanceBetween( c.getPosition().latitude, c.getPosition().longitude,
+                                            mLastLocation.getLatitude(), mLastLocation.getLongitude(), distance);
+
+                                    if (c.getState().equals("Available") && distance[0] < 50 ) {
+                                        _chargenow_btn.setEnabled(true);
+                                        _chargenow_btn.setAlpha(1f);
+                                    }
+
                                 }
 
                                 return;
@@ -887,11 +896,39 @@ public class MapFragment extends Fragment implements
                 }else if(mqttMessage.toString().contains("busy") || mqttMessage.toString().contains("Error!")){
                     notifyOnError(mqttMessage.toString().replace("Error! ",""));
                 }else if(mqttMessage.toString().equals("not charging")){
+                    if (isCharging)
+                        getShowReceipt(charging_session_id);
                     setFree();
                 }
             }
             @Override
             public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+            }
+        });
+
+        MQTTHelper mqttHelper3= new MQTTHelper(getActivity(),"tcp://development.enetlk.com:1887");
+        mqttHelper3.subscriptionTopic=("server/"+user_mobile+"/session");
+        mqttHelper3.setCallback(new MqttCallbackExtended() {
+            @Override
+            public void connectComplete(boolean reconnect, String serverURI) {
+
+            }
+
+            @Override
+            public void connectionLost(Throwable cause) {
+
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
+                charging_session_id=message.toString();
+
+                System.out.println(message.toString());
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+
             }
         });
 
@@ -936,6 +973,7 @@ public class MapFragment extends Fragment implements
     private void setCharging() {
         isCharging = true;
 
+        hideProgress();
         if(progressDialog!=null && progressDialog.isShowing()){
             progressDialog.dismiss();
         }
@@ -955,16 +993,18 @@ public class MapFragment extends Fragment implements
 
         Spinner spinner = (Spinner) view.findViewById(R.id.vehicle_spinner);
         ArrayList<String> ar = new ArrayList<String>();
+        ArrayList<String> vIds=new ArrayList<>();
         String reg_num;
         try {
 
             JSONArray obj = new JSONArray(user.get(SessionManager.electric_vehicles));
+
             for (int i = 0; i < obj.length(); i++) {
                 JSONObject vehicle_object = obj.getJSONObject(i);
                 final String model = vehicle_object.getString("model");
                 final String reg_no = vehicle_object.getString("reg_no");
-                reg_num=reg_no;
-                ar.add(model + "   " + reg_no);
+                vIds.add(vehicle_object.getString("id"));
+                ar.add(reg_no +" "+ model);
             }
         } catch (Throwable t) {
         }
@@ -979,7 +1019,7 @@ public class MapFragment extends Fragment implements
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                startCharging();
+                startCharging(selectedMarker,vIds.get(spinner.getSelectedItemPosition()));
             }
         });
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -993,7 +1033,7 @@ public class MapFragment extends Fragment implements
         dialog.getButton(dialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.colorPrimaryDark));
     }
 
-    private void startCharging(String vehicle_id){
+    private void startCharging(String selectedMarker,String vehicle_id){
         showProgress("Starting Charging Session");
         charging_marker = selectedMarker;
         session.user_charging_station(charging_marker);
@@ -1005,16 +1045,16 @@ public class MapFragment extends Fragment implements
             public void run() {
                 if (isCharging!=true && progressBar.getVisibility()==View.VISIBLE) {
                     hideProgress();
-                    showDialog("Connection Error", "Station server connection timeout!", "chargeNow", new Object[]{selectedMarker}, false);
+                    showDialog("Connection Error", "Station server connection timeout!", "chargeNow", new Object[]{selectedMarker,vehicle_id}, false);
                 }
             }
-        },5000);
+        },10000);
 
         JSONObject payload = new JSONObject();
         try {
             payload.put("cusid",user_mobile);
             payload.put("bysms", 0);
-            payload.put("message", "ev chg "+ charging_marker +" "+user_pin);
+            payload.put("message", "ev chg "+ charging_marker +" "+user_pin+" "+vehicle_id);
             chargingDuration=System.currentTimeMillis();
             System.out.println(payload);
             GoogleAnalyticsService.getInstance().setAction("Charging","Starting Charging Session",selectedMarker);
@@ -1031,7 +1071,7 @@ public class MapFragment extends Fragment implements
         mqttPublisher.publishToTopic(payload.toString(),getActivity().getApplicationContext());
     }
 
-    public void stopCharge(){
+    public void stopCharge(String session_id){
         showProgress("Stopping");
 
         Handler h=new Handler();
@@ -1050,7 +1090,7 @@ public class MapFragment extends Fragment implements
         try {
             payload.put("cusid",user_mobile);
             payload.put("bysms", 0);
-            payload.put("message", "ev stop "+ charging_marker +" "+user_pin);
+            payload.put("message", "ev stop "+ charging_marker +" "+user_pin+" "+session_id);
             chargingDuration=System.currentTimeMillis()-chargingDuration;
             double hours = (chargingDuration / (1000*60*60)) % 24;
             GoogleAnalyticsService.getInstance().setAction("Charging","Duration",hours+"");
@@ -1949,5 +1989,144 @@ public class MapFragment extends Fragment implements
         getCurrentLocation(true);
     }
 
+    private void getShowReceipt(String charging_session_id){
+        ServerConnector.getInstance(getActivity()).cancelRequest("GetReceipt");
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+"charging_sessions/"+charging_session_id,null,Request.Method.GET,
+                new OnResponseListner() {
+                    @TargetApi(Build.VERSION_CODES.O)
+                    @RequiresApi(api = Build.VERSION_CODES.M)
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            if (response.equals("[]")) {
+                            }
+                            else {
+                                System.out.println(response);
+                                JSONObject obj=new JSONObject(response);
 
+                                if (obj.getString("status").equals("DO")) {
+
+                                    android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
+                                    LayoutInflater inflater = getActivity().getLayoutInflater();
+                                    View view = inflater.inflate(R.layout.dialog_receipt, null);
+                                    TextView ch_id = view.findViewById(R.id.rec_charger_id);
+                                    TextView ch_type = view.findViewById(R.id.rec_charger_type);
+                                    TextView ch_power = view.findViewById(R.id.rec_charger_power);
+                                    TextView rec_veh = view.findViewById(R.id.rec_veh);
+                                    TextView rec_date = view.findViewById(R.id.rec_date);
+                                    TextView rec_start = view.findViewById(R.id.rec_start);
+                                    TextView rec_stop = view.findViewById(R.id.rec_stop);
+                                    TextView rec_dur = view.findViewById(R.id.rec_dur);
+                                    TextView rec_total = view.findViewById(R.id.rec_total);
+
+                                    JSONArray vehicles = new JSONArray(session.getVehicles());
+                                    String vehicle = "";
+                                    for (int i = 0; i < vehicles.length(); i++) {
+                                        JSONObject v = vehicles.getJSONObject(i);
+                                        if (v.getString("id").equals(obj.getString("electric_vehicle"))) {
+                                            vehicle=v.getString("reg_no") + " - " + v.getString("model");
+                                        }
+                                    }
+                                    rec_veh.setText(vehicle);
+
+                                    Charger ch=null;
+                                    for (Charger c : chargingStations) {
+                                        if (c.getId() == obj.getInt("charging_station")) {
+                                            ch=c;
+                                        }
+                                    }
+                                    ch_id.setText(ch.getDevice_id());
+                                    ch_type.setText(ch.getType());
+                                    ch_power.setText(ch.getPower() + " kWh");
+                                    rec_total.setText(""+obj.getDouble("cost"));
+
+                                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+                                    Date startDate = simpleDateFormat.parse(obj.getString("start_datetime"));
+
+                                    SimpleDateFormat dateFormat=new SimpleDateFormat("dd-MM-yyyy");
+                                    SimpleDateFormat timeFormat=new SimpleDateFormat("hh:mm:ss");
+
+                                    rec_date.setText(dateFormat.format(startDate));
+                                    rec_start.setText(timeFormat.format(startDate));
+
+                                    Date stopDate = simpleDateFormat.parse(obj.getString("end_datetime"));
+
+                                    rec_stop.setText(timeFormat.format(stopDate));
+
+                                    int dur = obj.getInt("duration");
+                                    if (dur > 59) {
+                                        int hours = dur / 60; //since both are ints, you get an int
+                                        int minutes = dur % 60;
+
+                                        if (hours > 1)
+                                            rec_dur.setText(hours + " hrs" + minutes + " mins");
+                                        else
+                                            rec_dur.setText(hours + " hr" + minutes + " mins");
+                                    } else
+                                        rec_dur.setText(dur + " mins");
+
+
+                                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            dialog.dismiss();
+                                        }
+                                    });
+                                    builder.setView(view);
+                                    android.app.AlertDialog dialog = builder.create();
+                                    dialog.show();
+                                    takeScreenshot();
+                                    clearSessionId();
+                                }
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                },
+                new OnErrorListner() {
+                    @RequiresApi(api = Build.VERSION_CODES.M)
+                    @Override
+                    public void onError(String error, JSONObject obj) {
+                        System.out.println(obj);
+                        showDialog("Routing Error", error, "checkRoute",
+                                new Object[]{charging_session_id}, true);
+                    }
+                },"GetReceipt");
+    }
+
+    private void clearSessionId(){
+        charging_session_id=null;
+    }
+
+    private void takeScreenshot() {
+        Date now = new Date();
+        android.text.format.DateFormat.format("yyyy-MM-dd_hh:mm:ss", now);
+
+        try {
+            // image naming and path  to include sd card  appending name you choose for file
+            String mPath = Environment.getExternalStorageDirectory().toString() + "/" + now + ".jpg";
+
+            // create bitmap screen capture
+            View v1 = getActivity().getWindow().getDecorView().getRootView();
+            v1.setDrawingCacheEnabled(true);
+            Bitmap bitmap = Bitmap.createBitmap(v1.getDrawingCache());
+            v1.setDrawingCacheEnabled(false);
+
+            File imageFile = new File(mPath);
+
+            FileOutputStream outputStream = new FileOutputStream(imageFile);
+            int quality = 100;
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream);
+            outputStream.flush();
+            outputStream.close();
+
+            //openScreenshot(imageFile);
+        } catch (Throwable e) {
+            // Several error may come out with file handling or DOM
+            e.printStackTrace();
+        }
+    }
 }

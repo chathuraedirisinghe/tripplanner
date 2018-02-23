@@ -73,18 +73,21 @@ public class MainActivity extends AppCompatActivity
         Stetho.initializeWithDefaults(this);
         //checkNetwork();
         checkLocationPermission();
-        System.out.println("CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE-CREATE");
-        CaocConfig.Builder.create()
-                .backgroundMode(CaocConfig.BACKGROUND_MODE_SILENT) //default: CaocConfig.BACKGROUND_MODE_SHOW_CUSTOM
-                .enabled(true) //default: true
-                .showErrorDetails(false) //default: true
-                .showRestartButton(true) //default: true
-                .logErrorOnRestart(false) //default: true
-                .trackActivities(true) //default: false
-                .minTimeBetweenCrashesMs(2000) //default: 3000
-                .errorDrawable(R.mipmap.ic_launcher) //default: bug image
-                .restartActivity(MainActivity.class) //default: null (your app's launch activity)
-                .apply();
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // only for gingerbread and newer versions
+            CaocConfig.Builder.create()
+                    .backgroundMode(CaocConfig.BACKGROUND_MODE_SILENT) //default: CaocConfig.BACKGROUND_MODE_SHOW_CUSTOM
+                    .enabled(true) //default: true
+                    .showErrorDetails(false) //default: true
+                    .showRestartButton(true) //default: true
+                    .logErrorOnRestart(false) //default: true
+                    .trackActivities(true) //default: false
+                    .minTimeBetweenCrashesMs(2000) //default: 3000
+                    .errorDrawable(R.mipmap.ic_launcher) //default: bug image
+                    .restartActivity(MainActivity.class) //default: null (your app's launch activity)
+                    .apply();
+        }
 
         if ( isExternalStorageWritable() ) {
             File appDirectory = new File( Environment.getExternalStorageDirectory() + "/GoEV_log" );

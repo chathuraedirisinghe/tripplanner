@@ -261,7 +261,7 @@ public class VehicleFragment extends Fragment {
                 try {
                     if (obj.has("reg_no")) {
                         reg = obj.getJSONArray("reg_no");
-                        message = "Reg no :"+reg.get(0).toString().substring(0, 1).toUpperCase() + reg.get(0).toString().substring(1);
+                        message = "Reg no : "+reg.get(0).toString().substring(0, 1).toUpperCase() + reg.get(0).toString().substring(1);
                     }
                     else if (obj.has("vin")) {
                         vin = obj.getJSONArray("vin");

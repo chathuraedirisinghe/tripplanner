@@ -6,7 +6,9 @@
     android:orientation="vertical"
     android:paddingLeft="20dp"
     android:paddingRight="20dp"
+    android:background="@android:color/white"
     android:paddingTop="20dp">
+
 
     <LinearLayout
         android:id="@+id/rec_details_layout"

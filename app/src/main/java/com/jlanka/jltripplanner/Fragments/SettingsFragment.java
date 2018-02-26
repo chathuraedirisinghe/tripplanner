@@ -101,7 +101,6 @@ public class SettingsFragment extends Fragment {
         tv_name.setText(user_fname+" "+user_lname);
         tv_mobile.setText(user_mobile);
 
-        System.out.println(user_fname);
     }
 
     private void showDialog() {
@@ -133,17 +132,14 @@ public class SettingsFragment extends Fragment {
             public void onClick(View v) {
                 String old_password = et_old_password.getText().toString();
                 String new_password = et_new_password.getText().toString();
-                System.out.println(old_password+","+new_password+","+user_passwd);
 
                 if(!old_password.isEmpty() || !new_password.isEmpty()) {
-                    System.out.println(new_password.length() + "   "+ old_password.length());
                     if (new_password.length() > 3 && new_password.length() < 7) {
                         if (!old_password.equals(user_passwd)) {
                             tv_message.setVisibility(View.VISIBLE);
                             tv_message.setText("Current PIN is Wrong");
                         }
                         else {
-                            System.out.println("USername ; " + user_name);
                             changePasswordProcess(user_name, old_password, new_password);
                         }
                     }
@@ -173,29 +169,30 @@ public class SettingsFragment extends Fragment {
         new OnResponseListner() {
             @Override
             public void onResponse(String response) {
-                Log.w("User Details : ", String.valueOf(response));
-                System.out.println("Server Respond : "+response);
-                if (response.contains("1")) {
-                    pd.dismiss();
-                    tv_message.setVisibility(View.GONE);
-                    dialog.dismiss();
-                    Snackbar.make(getView(), "PIN Changed Successfully.", Snackbar.LENGTH_LONG).show();
+                try {
+                    JSONObject obj = new JSONObject(response);
+                    if (obj.getString("status").equals("Password changed!")) {
+                        pd.dismiss();
+                        tv_message.setVisibility(View.GONE);
+                        dialog.dismiss();
+                        AlertDialog.Builder db = new AlertDialog.Builder(getActivity());
 
-                    AlertDialog.Builder db = new AlertDialog.Builder(getActivity());
-
-                    db.setTitle("Successfully Changed!")
-                            .setMessage("You will automatically redirect to Login page")
-                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-                                    session.logoutUser();
-                                }
-                            })
-                            .setIcon(android.R.drawable.ic_dialog_alert)
-                            .show();
-                } else {
-                    pd.dismiss();
-                    tv_message.setVisibility(View.VISIBLE);
-                    tv_message.setText("Unable to Change PIN.");
+                        db.setTitle("Successfully Changed!")
+                                .setMessage("You will automatically redirect to Login page")
+                                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        session.logoutUser();
+                                    }
+                                })
+                                .show();
+                    } else {
+                        pd.dismiss();
+                        tv_message.setVisibility(View.VISIBLE);
+                        tv_message.setText("Unable to Change PIN.");
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         },
@@ -204,7 +201,6 @@ public class SettingsFragment extends Fragment {
             @Override
             public void onError(String error, JSONObject obj) {
                 if (obj!=null)
-                System.out.println("SERVER RESPONSE : " + error + "OBJ : "+obj.toString());
 
                 pd.dismiss();
                 tv_message.setVisibility(View.VISIBLE);

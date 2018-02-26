@@ -150,7 +150,6 @@ public class SignupActivity extends Activity {
             @Override
             public void onError(String error, JSONObject obj) {
                 String message=error;
-                System.out.println("SERVER RESPONSE : " + error);
                 try {
                     if (obj.has("username"))
                         message=obj.getJSONArray("username").get(0).toString();

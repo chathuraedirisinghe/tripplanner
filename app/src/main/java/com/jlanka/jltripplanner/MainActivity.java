@@ -125,7 +125,6 @@ public class MainActivity extends AppCompatActivity
         String fname = user.get(SessionManager.user_fname);
         String lname = user.get(SessionManager.user_lname);
         String user_password = user.get(SessionManager.pass_word);
-        System.out.println("PASSWORD" + user_password);
         user_credit = user.get(SessionManager.user_credit);
         String user_mobile = user.get(SessionManager.user_mobile);
         vehicles = user.get(SessionManager.electric_vehicles);
@@ -150,9 +149,6 @@ public class MainActivity extends AppCompatActivity
         nameView.setText(fname+" "+lname);
         setUser_credit(user_credit);
         userMob.setText(user_mobile);
-
-//        getProfileData(user_mobile);
-        System.out.println("Vehicle Details : " + vehicles);
 
         if(session.isFirstTimeLaunch()){
             startActivity(new Intent(MainActivity.this, WelcomeActivity.class));
@@ -247,7 +243,6 @@ public class MainActivity extends AppCompatActivity
             new OnResponseListner() {
                 @Override
                 public void onResponse(String response) {
-            System.out.println("Logout : "+response);
             try{
                     if(new JSONObject(response).getString("status").contains("successful")){
                         session.logoutUser();
@@ -263,7 +258,6 @@ public class MainActivity extends AppCompatActivity
             new OnErrorListner() {
                 @Override
                 public void onError(String error, JSONObject obj) {
-                    System.out.println("SERVER RESPONSE : " + error);
                     AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
                     alertDialog.setTitle("Sorry");
                     alertDialog.setMessage(error);

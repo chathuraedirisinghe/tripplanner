@@ -65,7 +65,6 @@ public class FeedbackFragment extends Fragment {
                 Log.w("User Details : ", String.valueOf(response));
                 try{
                     JSONArray jsonResponse = new JSONArray(response);
-                    System.out.println("History Data : "+jsonResponse);
                     updateLastExpenses(jsonResponse);
                 } catch (JSONException e) {
                     e.printStackTrace();

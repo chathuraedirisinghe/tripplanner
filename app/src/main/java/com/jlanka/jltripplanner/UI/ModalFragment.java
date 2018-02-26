@@ -70,7 +70,6 @@ public class ModalFragment extends DialogFragment{
     }
 
     private void activateAccount(final String mobile, final String pin) {
-        System.out.println("Activation : "+mobile+"  "+pin);
         StringRequest postRequest = new StringRequest(Request.Method.POST, ServerConnector.SERVER_ADDRESS,
                 new Response.Listener<String>() {
                     @Override
@@ -80,7 +79,6 @@ public class ModalFragment extends DialogFragment{
                             Log.w("Activate Response   ", String.valueOf(jsonResponse));
 
                             String title = jsonResponse.getString("activated");
-                            System.out.println("TITLEEEEEEEEEEE"+title);
                             if(title.equals("0")){
                                 //not registered
                                 activationFailed();

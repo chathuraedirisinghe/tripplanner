@@ -21,6 +21,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 
@@ -135,7 +136,6 @@ public class VehicleFragment extends Fragment {
                         String v_in = String.valueOf(vin.getText());
                         String v_model = String.valueOf(model.getText());
                         String v_year = String.valueOf(year.getText());
-                        System.out.println(v_reg.isEmpty()+","+v_reg.length()+","+v_reg);
                         if (!v_reg.isEmpty()){
                             if(!v_in.isEmpty()){
                                 if (!v_model.isEmpty()){
@@ -186,8 +186,12 @@ public class VehicleFragment extends Fragment {
                             pd.dismiss();
                             JSONObject user_data = new JSONObject(response);
                             JSONArray vehicles = user_data.getJSONArray("electric_vehicles");
-                            session.setVehicles(vehicles);
-                            fragmentManager.beginTransaction().replace(R.id.content_frame,new MapFragment()).commit();
+                            if (vehicles.length()>0) {
+                                session.setVehicles(vehicles);
+                                fragmentManager.beginTransaction().replace(R.id.content_frame, new MapFragment()).commit();
+                            }
+                            else
+                                Toast.makeText(getActivity(), "Please add a vehicle to proceed", Toast.LENGTH_SHORT).show();
 
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -199,7 +203,7 @@ public class VehicleFragment extends Fragment {
                 new OnErrorListner() {
                     @Override
                     public void onError(String error, JSONObject obj) {
-
+                        Toast.makeText(getActivity(), error, Toast.LENGTH_SHORT).show();
                     }
                 },
                 "GetUser");
@@ -251,7 +255,6 @@ public class VehicleFragment extends Fragment {
         new OnErrorListner() {
             @Override
             public void onError(String error, JSONObject obj) {
-                System.out.println("SERVER RESPONSE : " + error + "OBJ : "+obj.toString());
                 JSONArray reg=null;
                 JSONArray vin=null;
                 String message=null;

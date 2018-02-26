@@ -190,6 +190,20 @@ public class SessionManager {
         _context.startActivity(i);
     }
 
+    public void setFName(String fname){
+        editor.putString(user_fname, fname);
+    }
+
+    public void setLName(String lname){
+        editor.putString(user_lname, lname);
+    }
+
+    public void setMobile(String mob){
+        editor.putString(user_mobile, mob);
+    }
+
+
+
     /**
      * Quick check for login
      * **/

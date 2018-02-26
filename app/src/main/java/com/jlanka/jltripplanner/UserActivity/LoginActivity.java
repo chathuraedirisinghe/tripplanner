@@ -117,7 +117,6 @@ public class LoginActivity extends AppCompatActivity {
 
         // TODO: Implement--> Get Data from Database.
         getServerResponse(username,password);
-        System.out.println("USERNAME : " +username+ "    Password : "+password);
 
     }
 
@@ -213,7 +212,6 @@ public class LoginActivity extends AppCompatActivity {
             public void onError(String error, JSONObject obj) {
                 String message=error;
                 if (obj!=null) {
-                    System.out.println("SERVER RESPONSE : " + error + "OBJ : " + obj.toString());
                     try {
                         message = obj.getString("status");
                     } catch (JSONException e) {
@@ -253,7 +251,6 @@ public class LoginActivity extends AppCompatActivity {
                             String email = user_data.getString("email");
                             String mob = user_data.getString("contact_number");
                             JSONArray vehicles = user_data.getJSONArray("electric_vehicles");
-                            System.out.println("Vehicles : " + vehicles);
 
 //                    if(vehicle.getString(0).equals(null)){
 //                        vehicle = "default";

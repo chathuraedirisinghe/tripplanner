@@ -173,48 +173,54 @@
         <!--android:textSize="18sp"/>-->
 
         <LinearLayout
-            android:layout_margin="6dp"
             android:id="@+id/btnLL"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_margin="6dp"
+            android:visibility="visible">
 
             <Button
-                android:layout_marginLeft="2dp"
-                android:layout_marginRight="2dp"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="@color/colorPrimary"
                 android:id="@+id/get_direction"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Get Directions"/>
-
-            <Button
                 android:layout_marginLeft="2dp"
                 android:layout_marginRight="2dp"
-                android:textColor="#FFFFFF"
+                android:layout_weight="1"
                 android:backgroundTint="@color/colorPrimary"
+                android:text="Get Directions"
+                android:textColor="#FFFFFF" />
+
+            <Button
                 android:id="@+id/charge_now_btn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginLeft="2dp"
+                android:layout_marginRight="2dp"
                 android:layout_weight="1"
-                android:text="Charge Now"/>
+                android:backgroundTint="@color/colorPrimary"
+                android:text="Charge Now"
+                android:textColor="#FFFFFF" />
 
 
         </LinearLayout>
+
         <LinearLayout
             android:id="@+id/stop"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:visibility="visible">
+
             <Button
-                android:background="#FF0000"
-                android:textColor="#FFFFFF"
                 android:id="@+id/stop_now_btn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:layout_marginHorizontal="10dp"
                 android:layout_weight="1"
+                android:background="#FF0000"
                 android:text="Stop"
-                android:visibility="gone"/>
+                android:textColor="#FFFFFF"
+                android:visibility="gone" />
 
         </LinearLayout>
     </LinearLayout>

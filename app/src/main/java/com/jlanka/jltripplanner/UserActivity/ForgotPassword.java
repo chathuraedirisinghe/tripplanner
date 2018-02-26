@@ -62,7 +62,6 @@ public class ForgotPassword extends AppCompatActivity {
 
         _forgotWebView.setWebChromeClient(new WebChromeClient() {
             public void onProgressChanged(WebView view, int progress) {
-                System.out.println(progress);
                 if (progress==100) {
                     if (progressBar.isShowing()) {
                         progressBar.dismiss();

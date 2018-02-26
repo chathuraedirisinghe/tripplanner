@@ -3,13 +3,17 @@ package com.jlanka.jltripplanner.Fragments;
 import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.RequiresApi;
-import android.support.v7.widget.RecyclerView;
+import android.support.design.widget.NavigationView;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,11 +25,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.facebook.stetho.Stetho;
 
 import org.json.JSONArray;
@@ -34,19 +33,18 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
 import com.jlanka.jltripplanner.Adapters.Vehicle;
-import com.jlanka.jltripplanner.Adapters.VehicleAdapter;
 import com.jlanka.jltripplanner.GoogleAnalyticsService;
 import com.jlanka.jltripplanner.R;
 import com.jlanka.jltripplanner.Server.OnErrorListner;
 import com.jlanka.jltripplanner.Server.OnResponseListner;
 import com.jlanka.jltripplanner.Server.ServerConnector;
+import com.jlanka.jltripplanner.UI.EditProfileDialog;
 import com.jlanka.jltripplanner.UserActivity.SessionManager;
 
 /**
@@ -63,6 +61,8 @@ public class ProfileFragment extends Fragment {
 //    @BindView(R.id.profile_nic)TextView _nic;
     @BindView(R.id.profile_mobile)TextView _mobile;
     @BindView(R.id.addVehiclebtn) ImageButton _addVehicle;
+    @BindView(R.id.remVehiclebtn) ImageButton _remVehicle;
+    @BindView(R.id.prof_edit) ImageButton _editProfile;
 //    @BindView(R.id.profile_address)TextView _address;
 //    @BindView(R.id.profile_cartype)TextView _cartype;
 
@@ -104,6 +104,22 @@ public class ProfileFragment extends Fragment {
 
 //        getProfileData(user_mobile);
         setProfile();
+
+        _editProfile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EditProfileDialog dpf=new EditProfileDialog();
+                dpf.init(user.get(SessionManager.user_id),_fname.getText().toString(),_lname.getText().toString(),_mobile.getText().toString(),
+                        user.get(SessionManager.user_name),user.get(SessionManager.pass_word),new OnResponseListner() {
+                    @Override
+                    public void onResponse(String response) {
+                        dpf.dismiss();
+                        reloadSession(user_id,user.get(SessionManager.pass_word));
+                    }
+                });
+                dpf.show(getFragmentManager(),"ProfileEditDialog");
+            }
+        });
 
         //----------------------------------Thiwanka----------------------------------
         GoogleAnalyticsService.getInstance().setScreenName(this.getClass().getSimpleName());
@@ -147,7 +163,6 @@ public class ProfileFragment extends Fragment {
                         String v_in = String.valueOf(vin.getText());
                         String v_model = String.valueOf(model.getText());
                         String v_year = String.valueOf(year.getText());
-                        System.out.println(v_reg.isEmpty()+","+v_reg.length()+","+v_reg);
                         if (!v_reg.isEmpty()){
                             if(!v_in.isEmpty()){
                                 if (!v_model.isEmpty()){
@@ -175,6 +190,21 @@ public class ProfileFragment extends Fragment {
                         }
                     }
                 });
+            }
+        });
+
+        _remVehicle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    Spinner spinner = (Spinner) myView.findViewById(R.id.spinner);
+                    spinner.getSelectedItemPosition();
+                    JSONArray obj = new JSONArray(user.get(SessionManager.electric_vehicles));
+                    deleteVehicle(obj.getJSONObject(spinner.getSelectedItemPosition()).getString("id").toString());
+                }
+                catch (Exception e){
+
+                }
             }
         });
         return myView;
@@ -238,9 +268,11 @@ public class ProfileFragment extends Fragment {
                     JSONObject VehicleDetails = new JSONObject(response);
                     JSONArray _vehicles = new JSONArray(session.getVehicles());
                     _vehicles.put(VehicleDetails);
-                    session.setVehicles(_vehicles);
+                    HashMap<String, String> user = session.getUserDetails();
+                    reloadSession(user_id,user.get(SessionManager.pass_word));
                     GoogleAnalyticsService.getInstance().setAction("Vehicle","Add Vehicle",modal+year+"");
                     addToSpinner(session.getUserDetails());
+                    Toast.makeText(getActivity(), "Vehicle Added", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -253,36 +285,94 @@ public class ProfileFragment extends Fragment {
             @RequiresApi(api = Build.VERSION_CODES.KITKAT)
             @Override
             public void onError(String error, JSONObject obj) {
-                System.out.println("SERVER RESPONSE : " + error + "OBJ : "+obj.toString());
-                JSONArray reg=null;
-                JSONArray vin=null;
-                String message=null;
+                JSONArray reg = null;
+                JSONArray vin = null;
+                String message = null;
+                System.out.println(obj);
                 try {
-                    reg = obj.getJSONArray("reg_no");
+                    if (obj.has("reg_no")) {
+                        reg = obj.getJSONArray("reg_no");
+                        message = "Reg no : " + reg.get(0).toString().substring(0, 1).toUpperCase() + reg.get(0).toString().substring(1);
+                    } else if (obj.has("vin")) {
+                        vin = obj.getJSONArray("vin");
+                        message = "Vin : " + vin.get(0).toString().substring(0, 1).toUpperCase() + vin.get(0).toString().substring(1);
+                    } else
+                        message = error;
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                catch (Exception e) {
-                }
-
-                try {
-                    vin = obj.getJSONArray("vin");
-                }
-                catch (Exception e) {
-                }
-
-                try {
-                    if (reg != null)
-                        message = reg.get(0).toString().substring(0, 1).toUpperCase() + reg.get(0).toString().substring(1);
-                    else if ( vin != null)
-                        message = vin.get(0).toString().substring(0, 1).toUpperCase() + vin.get(0).toString().substring(1);
-                    else if (message==null)
-                        message=error;
-
-                    tv_message.setText(message);
-                    tv_message.setVisibility(View.VISIBLE);
-                }
-                catch (Exception e){e.printStackTrace();}
+                tv_message.setText(message);
+                tv_message.setVisibility(View.VISIBLE);
             }
         },"SendVehicleData");
     }
 
+    private void deleteVehicle(String vehicleID){
+        ServerConnector.getInstance(getActivity()).cancelRequest("DeleteVehicle");
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+"electric_vehicles/"+vehicleID+"/",null, Request.Method.DELETE,
+                new OnResponseListner() {
+                    @Override
+                    public void onResponse(String response) {
+                        HashMap<String, String> user = session.getUserDetails();
+                        reloadSession(user_id,user.get(SessionManager.pass_word));
+                        Toast.makeText(getActivity(), "Vehicle removed", Toast.LENGTH_SHORT).show();
+                    }
+                },
+
+                new OnErrorListner() {
+                    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+                    @Override
+                    public void onError(String error, JSONObject obj) {
+                        Toast.makeText(getActivity(), error, Toast.LENGTH_SHORT).show();
+                    }
+                },"SendVehicleData");
+    }
+
+    private void reloadSession(String id, final String password) {
+        ServerConnector.getInstance(getActivity()).cancelRequest("getUserDetails");
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS + "ev_owners/" + id + "/", null, Request.Method.GET,
+                new OnResponseListner() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.w("User Details : ", String.valueOf(response));
+                        try {
+                            JSONObject user_data = new JSONObject(response);
+                            String id = user_data.getString("id");
+                            String username = user_data.getString("username");
+                            String credits = user_data.getString("balance");
+                            String fname = user_data.getString("first_name");
+                            String lname = user_data.getString("last_name");
+                            String email = user_data.getString("email");
+                            String mob = user_data.getString("contact_number");
+                            JSONArray vehicles = user_data.getJSONArray("electric_vehicles");
+
+                            NavigationView navigationView = (NavigationView) getActivity().getWindow().findViewById(R.id.nav_view);
+                            View header = navigationView.getHeaderView(0);
+                            TextView nameView = (TextView)header.findViewById(R.id.user_name);
+                            TextView creditView = (TextView)header.findViewById(R.id.user_credit);
+                            TextView userMob = (TextView)header.findViewById(R.id.user_mobile);
+
+                            nameView.setText(fname+" "+lname);
+                            userMob.setText(mob);
+
+                            session.createLoginSession(id, username, password, fname, lname, email, mob, credits, vehicles);
+                            addToSpinner(session.getUserDetails());
+                            getFragmentManager().beginTransaction().remove(ProfileFragment.this);
+                            getFragmentManager().beginTransaction().commit();
+                            getFragmentManager().beginTransaction().replace(R.id.content_frame, new ProfileFragment()).addToBackStack(HistoryFragment.class.getName()).commit();
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                },
+                new OnErrorListner() {
+                    @Override
+                    public void onError(String error, JSONObject obj) {
+                        Toast.makeText(getActivity(),error,Toast.LENGTH_LONG).show();
+                    }
+                },
+                "getUserDetails");
+    }
 }

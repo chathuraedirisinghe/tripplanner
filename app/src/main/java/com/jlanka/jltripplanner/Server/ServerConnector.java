@@ -75,7 +75,6 @@ public class ServerConnector {
                         error.printStackTrace();
                         if (error instanceof ServerError && response != null) {
                             try {
-                                System.out.println(error);
                                 String res = new String(response.data,
                                         HttpHeaderParser.parseCharset(response.headers, "utf-8"));
                                 // Now you can use any deserializer to make sense of data

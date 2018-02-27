@@ -197,7 +197,11 @@ public class ReceiptDialog extends DialogFragment {
         try {
             checkPermissions();
             // image naming and path  to include sd card  appending name you choose for file
-            String mPath = Environment.getExternalStorageDirectory().toString() + "/" + now + ".jpg";
+            File f = new File(Environment.getExternalStorageDirectory().toString()+"/JL Trip Planner");
+            if (!f.exists())
+                f.mkdir();
+
+            String mPath = f.getPath() + "/" + now + ".jpg";
             System.out.println(mPath);
 
             // create bitmap screen capture

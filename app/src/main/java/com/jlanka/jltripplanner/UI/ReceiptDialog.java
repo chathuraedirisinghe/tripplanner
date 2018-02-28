@@ -141,7 +141,7 @@ public class ReceiptDialog extends DialogFragment {
                                         if (c.getId() == obj.getInt("charging_station")) {
                                             ch_id.setText(c.getDevice_id());
                                             ch_type.setText(c.getType());
-                                            ch_power.setText(c.getPower() + " kWh");
+                                            ch_power.setText(c.getPower() + " kW");
                                             rec_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState()));
                                         }
                                     }
@@ -167,9 +167,9 @@ public class ReceiptDialog extends DialogFragment {
                                         int minutes = dur % 60;
 
                                         if (hours > 1)
-                                            rec_dur.setText(hours + " hrs" + minutes + " mins");
+                                            rec_dur.setText(hours + "hrs " + minutes + "mins");
                                         else
-                                            rec_dur.setText(hours + " hr" + minutes + " mins");
+                                            rec_dur.setText(hours + "hr " + minutes + "mins");
                                     } else
                                         rec_dur.setText(dur + " mins");
                                     progressLayout.setVisibility(View.GONE);
@@ -202,7 +202,6 @@ public class ReceiptDialog extends DialogFragment {
                 f.mkdir();
 
             String mPath = f.getPath() + "/" + now + ".jpg";
-            System.out.println(mPath);
 
             // create bitmap screen capture
             View v1 = view;

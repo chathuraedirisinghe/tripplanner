@@ -145,7 +145,7 @@ public class SettingsFragment extends Fragment {
                     }
                     else{
                         tv_message.setVisibility(View.VISIBLE);
-                        tv_message.setText("PIN length should greater than 4 - 6 digit");
+                        tv_message.setText("PIN length should be between 4 - 6 digit");
                     }
                 }
                 else{

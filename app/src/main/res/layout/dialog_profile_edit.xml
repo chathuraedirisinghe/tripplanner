@@ -22,6 +22,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
+            android:digits="@string/letters_only"
             android:inputType="textPersonName"
             android:text="First Name" />
 
@@ -43,6 +44,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
+            android:digits="@string/letters_only"
             android:inputType="textPersonName"
             android:text="Last Name" />
 
@@ -63,8 +65,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
-            android:inputType="textPersonName"
-            android:text="0773820178" />
+            android:inputType="number"
+            android:text="" />
 
     </LinearLayout>
 

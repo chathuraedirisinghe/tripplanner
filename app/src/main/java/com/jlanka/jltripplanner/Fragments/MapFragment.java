@@ -121,7 +121,7 @@ public class MapFragment extends Fragment implements
     GoogleMap mGoogleMap;
     MapView mMapView;
     Location mLastLocation;
-    Marker mCurrLocationMarker;
+    Marker mCurrLocationMarker,chargingStation;
     String selectedMarker;
 
     //--------------Thiwanka--------------
@@ -134,16 +134,13 @@ public class MapFragment extends Fragment implements
 
     View mView;
     double currentLatitude,currentLongitude,mylatitude,mylongitude;
-    LatLng latLng,selectedMarker_latLng;
+    LatLng latLng;
     private long chargingDuration;
     private boolean firstLoad = true;
 
-//    public JSONArray itemArray =new JSONArray();
-    public JSONArray stations_object = new JSONArray();
     public static boolean isCharging=false,destinationSet=false;
     private AlertDialog ad;
 
-    JSONObject charger_array;
 
     String user_mobile,user_pin;
     HashMap<String, String> user;
@@ -221,19 +218,15 @@ public class MapFragment extends Fragment implements
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
                 switch (newState) {
                     case BottomSheetBehavior.STATE_DRAGGING:
-                        Log.d(TAG, "BottomSheetBehavior.STATE_DRAGGING");
                         break;
                     case BottomSheetBehavior.STATE_SETTLING:
-                        Log.d(TAG, "BottomSheetBehavior.STATE_SETTLING");
                         break;
                     case BottomSheetBehavior.STATE_EXPANDED:
-                        Log.d(TAG, "BottomSheetBehavior.STATE_EXPANDED");
                         break;
                     case BottomSheetBehavior.STATE_COLLAPSED:
-                        Log.d(TAG, "BottomSheetBehavior.STATE_COLLAPSED");
                         break;
                     case BottomSheetBehavior.STATE_HIDDEN:
-                        Log.d(TAG, "BottomSheetBehavior.STATE_HIDDEN");
+
                         break;
                 }
             }
@@ -387,24 +380,47 @@ public class MapFragment extends Fragment implements
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-            selectedMarker = marker.getTitle();
-            if (marker.getTag().equals("Destination_Marker"))
-                marker.showInfoWindow();
-            else if (!marker.getTag().equals("Polyline_InfoWindow")) {
-                for (Charger c : chargingStations) {
-                    if (c.getDevice_id().equals(marker.getTag())) {
-                        updateBottomSheet(c);
-                        break;
-                    }
-                }
-            }
+        selectedMarker = marker.getTitle();
 
-            refreshButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    onMarkerClick(marker);
+        if (chargingStation!=null && isCharging && marker!=chargingStation){
+            onMarkerClick(chargingStation);
+            return true;
+        }
+
+        if (marker.getTag().equals("Destination_Marker"))
+            marker.showInfoWindow();
+        else if (!marker.getTag().equals("Polyline_InfoWindow")) {
+            for (Charger c : chargingStations) {
+                if (c.getDevice_id().equals(marker.getTag())) {
+                    updateBottomSheet(c);
+                    break;
                 }
-            });
+
+            }
+        }
+
+        chargingStation=marker;
+        refreshButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onMarkerClick(marker);
+            }
+        });
+
+        _chargenow_btn.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            @Override
+            public void onClick(View v) {
+                float[] distance = new float[2];
+                Location.distanceBetween(marker.getPosition().latitude, marker.getPosition().longitude,
+                        mLastLocation.getLatitude(), mLastLocation.getLongitude(), distance);
+
+                if (distance[0] > 100)
+                    notifyOnError("You need to be within 100m of the charging station");
+                else
+                    chargeNow(_charger_id.getTag().toString());
+            }
+        });
         return false;
     }
 
@@ -466,7 +482,6 @@ public class MapFragment extends Fragment implements
         mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng point) {
-                Log.d("Map","Map clicked");
                 if (!isCharging)
                     collapseBottomSheet();
                 else
@@ -490,8 +505,6 @@ public class MapFragment extends Fragment implements
         double nextlatitude = mGoogleMap.getProjection().getVisibleRegion().latLngBounds.getCenter().latitude;
         double nextlongitude = mGoogleMap.getProjection().getVisibleRegion().latLngBounds.getCenter().longitude;
 
-        System.out.println("Location My : "+mylatitude+"  "+mylongitude);
-        System.out.println("Location Next : "+nextlatitude+"  "+nextlongitude);
 
         Location my = new Location("point A");
 
@@ -505,7 +518,6 @@ public class MapFragment extends Fragment implements
 
         float distance = my.distanceTo(remote);
 
-        System.out.println("Location Distance : "+ distance);
 
         if(distance>5000.0){
             getResponse(nextlatitude,nextlongitude);
@@ -605,7 +617,7 @@ public class MapFragment extends Fragment implements
         Location.distanceBetween( c.getPosition().latitude, c.getPosition().longitude,
                 mLastLocation.getLatitude(), mLastLocation.getLongitude(), distance);
 
-        if (c.getState().equals("Available") && distance[0] < 50 ) {
+        if (c.getState().equals("Available")) {
             _chargenow_btn.setEnabled(true);
             _chargenow_btn.setAlpha(1f);
         }
@@ -628,13 +640,6 @@ public class MapFragment extends Fragment implements
         if (behavior.getState() == BottomSheetBehavior.STATE_COLLAPSED) {
             expandBottomSheet();
         }
-
-        _chargenow_btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                chargeNow(_charger_id.getTag().toString());
-            }
-        });
 
         _get_direction.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.M)
@@ -736,17 +741,7 @@ public class MapFragment extends Fragment implements
                                 if (selectedMarker.equals(c.getDevice_id())) {
                                     _charger_availability.setText(" " + c.getState());
                                     _charger_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState()));
-                                    float[] distance = new float[2];
-                                    Location.distanceBetween( c.getPosition().latitude, c.getPosition().longitude,
-                                            mLastLocation.getLatitude(), mLastLocation.getLongitude(), distance);
-
-                                    if (c.getState().equals("Available") && distance[0] < 100 ) {
-                                        _chargenow_btn.setEnabled(true);
-                                        _chargenow_btn.setAlpha(1f);
-                                    }
-
                                 }
-
                                 return;
                             }
                         }
@@ -827,6 +822,7 @@ public class MapFragment extends Fragment implements
         if(progressDialog!=null && progressDialog.isShowing()){
             progressDialog.dismiss();
         }
+
 //        session.user_charging_station(null);
         _chargenow_btn.setEnabled(true);
         _chargenow_btn.setAlpha(1f);
@@ -867,8 +863,7 @@ public class MapFragment extends Fragment implements
         if(progressDialog!=null && progressDialog.isShowing()){
             progressDialog.dismiss();
         }
-        //_imageView.setVisibility(View.VISIBLE);
-        //_charging_station.setVisibility(View.VISIBLE);
+
         //_charging_station.setText(user.get(SessionManager.user_chargingStation));
         _chargenow_btn.setVisibility(View.GONE);
         _get_direction.setVisibility(View.GONE);
@@ -987,6 +982,9 @@ public class MapFragment extends Fragment implements
         getCurrentLocation(false);
         if (mLastLocation!=null)
             getAddressSuggestions(newQuery);
+        else if(isCharging){
+            Toast.makeText(getActivity(), "Charging currently in progress", Toast.LENGTH_SHORT).show();
+        }
         else
             showDialog("Location Error","Unable to retrieve current location","currentLocation",null,true);
 
@@ -998,8 +996,8 @@ public class MapFragment extends Fragment implements
                 AlertDialog.Builder dlgAlert = new AlertDialog.Builder(getActivity().getWindow().getContext());
                 dlgAlert.setMessage(message);
                 dlgAlert.setTitle(title);
-                String positiveButtonText = "Retry";
 
+                String positiveButtonText = "Retry";
                 dlgAlert.setPositiveButton(positiveButtonText, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -1069,8 +1067,8 @@ public class MapFragment extends Fragment implements
 
         }
         catch(Exception e){
-                GoogleAnalyticsService.getInstance().trackException(getActivity().getApplicationContext(), e);
-            }
+            GoogleAnalyticsService.getInstance().trackException(getActivity().getApplicationContext(), e);
+        }
     }
 
     private void getAddressSuggestions(final String query){
@@ -1099,7 +1097,6 @@ public class MapFragment extends Fragment implements
                         } else {
 
                             try {
-                                // Log.d(TAG, jsonResults.toString());
                                 jsonResults = new JSONObject(response);
                                 // Create a JSON object hierarchy from the results
                                 JSONObject jsonObj = new JSONObject(jsonResults.toString());
@@ -1129,7 +1126,6 @@ public class MapFragment extends Fragment implements
                     @Override
                     public void onError(String error, JSONObject obj) {
                         fsv.hideProgress();
-                        Log.d("Error   ", String.valueOf(error));
                         showDialog("Timeout","Check Your internet connection...","getAddressSuggestions",new Object[]{query},false);
                     }
                 },"Address_Suggestion_Requests");
@@ -1200,7 +1196,6 @@ public class MapFragment extends Fragment implements
                 @Override
                 public void onError(String error, JSONObject obj) {
                     hideProgress();
-                    Log.d("Error   ", String.valueOf(error));
                     showDialog("Timeout","Check Your internet connection..","searchLocationByName",new Object[]{query},false);
                 }
             },"Location_Search_Requests");

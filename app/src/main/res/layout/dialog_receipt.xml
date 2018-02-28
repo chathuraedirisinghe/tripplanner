@@ -61,7 +61,7 @@
                     android:layout_marginLeft="5dp"
                     android:layout_weight="1"
                     android:autoLink="phone"
-                    android:text="+94 112 786 786"
+                    android:text="011"
                     android:textSize="12sp" />
             </LinearLayout>
 

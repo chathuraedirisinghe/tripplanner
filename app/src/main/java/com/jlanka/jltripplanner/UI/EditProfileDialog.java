@@ -41,59 +41,18 @@ public class EditProfileDialog extends DialogFragment {
     TextView errorMessage;
     private AlertDialog dialog;
     private OnResponseListner responseListner;
-    private String userId,fName,lName,contactNo,username,password;
+    private String userId,fName,lName,contactNo,email,username,password;
 
-    public void init(String id,String fName,String lName,String contactNo,String username,String password,OnResponseListner responseListner){
+    public void init(String id,String fName,String lName,String contactNo,String email,String username,String password,OnResponseListner responseListner){
         userId=id;
         this.fName=fName;
         this.lName=lName;
         this.contactNo=contactNo;
+        this.email=email;
         this.username=username;
         this.password=password;
         this.responseListner=responseListner;
     }
-
-//    @Override
-//    public Dialog onCreateDialog(Bundle savedInstanceState) {
-//        super.onCreateDialog(savedInstanceState);
-//
-//        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-//        LayoutInflater inflater = getActivity().getLayoutInflater();
-//        View view = inflater.inflate(R.layout.dialog_profile_edit, null);
-//        EditText fname=view.findViewById(R.id.prof_edit_fname);
-//        EditText lname=view.findViewById(R.id.prof_edit_lname);
-//        EditText contact=view.findViewById(R.id.prof_edit_contact);
-//        progress = (ProgressBar) view.findViewById(R.id.prof_edit_progress);
-//        errorMessage=view.findViewById(R.id.prof_edit_error);
-//
-//        fname.setText(fName);
-//        lname.setText(lName);
-//        contact.setText(contactNo);
-//        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-//            @Override
-//            public void onClick(DialogInterface dialog, int which) {
-//                dialog.dismiss();
-//            }
-//        });
-//
-//        builder.setView(view);
-//        AlertDialog dialog = builder.create();
-//        dialog.setCancelable(false);
-//
-//        dialog.setButton(DialogInterface.BUTTON_POSITIVE,"Ok", new DialogInterface.OnClickListener() {
-//            @Override
-//            public void onClick(DialogInterface dialog, int which) {
-//                progress.setVisibility(View.VISIBLE);
-//                if (isValid(fname.getText().toString(),lname.getText().toString(),contact.getText().toString()))
-//                    sendNewData(dialog,id,fname.getText().toString(),lname.getText().toString(),contact.getText().toString());
-//            }
-//        });
-//
-//        dialog.show();
-//        dialog.getButton(DialogInterface.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.colorPrimaryDark));
-//        return dialog;
-//    }
-
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -134,7 +93,7 @@ public class EditProfileDialog extends DialogFragment {
             public void onClick(View v) {
                 if (isValid(fname.getText().toString(),lname.getText().toString(),contact.getText().toString())){
                     progress.setVisibility(View.VISIBLE);
-                    sendNewData(fname.getText().toString(),lname.getText().toString(),contact.getText().toString());
+                    sendNewData(fname.getText().toString(),lname.getText().toString(),contact.getText().toString(),email);
                 }
 
 
@@ -143,12 +102,13 @@ public class EditProfileDialog extends DialogFragment {
         return dialog;
     }
 
-    private void sendNewData(String fname, String lname, String contact){
+    private void sendNewData(String fname, String lname, String contact,String email){
 
         Map<String, String>  params = new HashMap<>();
         params.put("first_name", fname);
         params.put("last_name", lname);
         params.put("contact_number", contact);
+        params.put("email",email);
         params.put("username",username);
         params.put("password",password);
 
@@ -160,10 +120,21 @@ public class EditProfileDialog extends DialogFragment {
                 new OnErrorListner() {
                     @Override
                     public void onError(String error, JSONObject obj) {
+                        progress.setVisibility(View.GONE);
                         String message=error;
-                        if (obj!=null)
-                            message=obj.toString();
+                        try {
+                            if (obj != null) {
+                                if (obj.has("contact_number"))
+                                    message = "Contact no : " + obj.getJSONArray("contact_number").get(0).toString();
+                                else if (obj.has("email"))
+                                    message = "Email : " + obj.getJSONArray("email").get(0).toString();
+                            }
+                        }
+                        catch (Exception e){
+                            e.printStackTrace();
+                        }
                         errorMessage.setText(message);
+                        errorMessage.setVisibility(View.VISIBLE);
                     }
                 }
                 , "GetOwner");

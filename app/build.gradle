@@ -8,7 +8,7 @@ android {
         applicationId "com.jlanka.jltripplanner"
         minSdkVersion 18
         targetSdkVersion 26
-        versionName 'v1.0'
+        versionName 'v1.01'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
@@ -61,4 +61,5 @@ dependencies {
     compile 'com.google.android.gms:play-services-analytics:10.2.4'
     compile 'cat.ereza:customactivityoncrash:2.2.0'
     compile 'com.github.arimorty:floatingsearchview:2.0.3'
+    implementation 'com.facebook.android:facebook-login:[4,5)'
 }

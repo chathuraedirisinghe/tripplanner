@@ -11,12 +11,16 @@ import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import com.android.volley.Request;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -24,6 +28,17 @@ import java.util.regex.Pattern;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import com.facebook.AccessToken;
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.GraphRequest;
+import com.facebook.GraphResponse;
+import com.facebook.Profile;
+import com.facebook.ProfileTracker;
+import com.facebook.login.LoginManager;
+import com.facebook.login.LoginResult;
+import com.facebook.login.widget.LoginButton;
 import com.jlanka.jltripplanner.R;
 
 import com.jlanka.jltripplanner.GoogleAnalyticsService;
@@ -33,6 +48,10 @@ import com.jlanka.jltripplanner.Server.ServerConnector;
 
 public class SignupActivity extends Activity {
     private static final String TAG = "SignupActivity";
+    private LoginButton loginButton;
+    private CallbackManager callbackManager;
+    @BindView(R.id.sign_form) LinearLayout form;
+    @BindView(R.id.singup_buttons) LinearLayout buttonsLayout;
     @BindView(R.id.input_username) EditText _username;
     @BindView(R.id.input_fname) EditText _fname;
     @BindView(R.id.input_lname) EditText _lname;
@@ -40,6 +59,7 @@ public class SignupActivity extends Activity {
     @BindView(R.id.input_mobile) EditText _mobileText;
     @BindView(R.id.input_password) EditText _passwordText;
     @BindView(R.id.btn_signup) Button _signupButton;
+    @BindView(R.id.signup_manual) Button manualSignup;
     @BindView(R.id.link_login) TextView _loginLink;
 
     @Override
@@ -63,10 +83,95 @@ public class SignupActivity extends Activity {
                 finish();
             }
         });
+
+        loginButton = (LoginButton) findViewById(R.id.login_button);
+        loginButton.setReadPermissions(Arrays.asList(
+                 "email","public_profile"));
+        callbackManager = CallbackManager.Factory.create();
+
+        // Callback registration
+        loginButton.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
+            @Override
+            public void onSuccess(LoginResult loginResult) {
+                AccessToken accessToken = loginResult.getAccessToken();
+                Profile profile = Profile.getCurrentProfile();
+
+                // Facebook Email address
+                GraphRequest request = GraphRequest.newMeRequest(
+                        loginResult.getAccessToken(),
+                        new GraphRequest.GraphJSONObjectCallback() {
+                            @Override
+                            public void onCompleted(JSONObject object,GraphResponse response) {
+
+                                Log.v("LoginActivity Response ", response.toString());
+
+                                try {
+
+                                    if (object.has("email")) {
+                                        _emailText.setText(object.getString("email"));
+                                    }
+                                    if (object.has("first_name")) {
+                                        _username.setText(object.getString("first_name"));
+                                        _fname.setText(object.getString("first_name"));
+                                    }
+                                    if (object.has("last_name")) {
+                                        _lname.setText(object.getString("last_name"));
+                                    }
+
+                                    buttonsLayout.setVisibility(View.GONE);
+                                    form.setVisibility(View.VISIBLE);
+                                    LoginManager.getInstance().logOut();
+                                    //Toast.makeText(getApplicationContext(), "Name " + Name, Toast.LENGTH_LONG).show();
+
+
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+
+                Bundle parameters = new Bundle();
+                parameters.putString("fields", "email,first_name,last_name");
+                request.setParameters(parameters);
+                request.executeAsync();
+            }
+
+            @Override
+            public void onCancel() {
+                LoginManager.getInstance().logOut();
+            }
+
+            @Override
+            public void onError(FacebookException e) {
+                AlertDialog alertDialog = new AlertDialog.Builder(SignupActivity.this).create();
+                alertDialog.setTitle("Sorry");
+                alertDialog.setMessage(e.toString());
+                alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+                alertDialog.show();
+            }
+        });
+
+        ProfileTracker mProfileTracker = new ProfileTracker() {
+            @Override
+            protected void onCurrentProfileChanged(Profile oldProfile, Profile newProfile) {
+                // Fetch user details from New Profile
+            }
+        };
+
+        manualSignup.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                buttonsLayout.setVisibility(View.GONE);
+                form.setVisibility(View.VISIBLE);
+            }
+        });
     }
 
     public void signup() {
-        Log.d(TAG, "Signup");
 
         if (!validate()) {
             onSignupFailed();
@@ -152,11 +257,11 @@ public class SignupActivity extends Activity {
                 String message=error;
                 try {
                     if (obj.has("username"))
-                        message=obj.getJSONArray("username").get(0).toString();
+                        message="Username : "+obj.getJSONArray("username").get(0).toString();
                     else if (obj.has("email"))
-                        message=obj.getJSONArray("email").get(0).toString();
+                        message="Email : "+obj.getJSONArray("email").get(0).toString();
                     else if (obj.has("contact_number"))
-                        message=obj.getJSONArray("contact_number").get(0).toString();
+                        message="Contact no : "+obj.getJSONArray("contact_number").get(0).toString();
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -301,11 +406,17 @@ public class SignupActivity extends Activity {
         }
 
         if (user_password.isEmpty() || user_password.length()<4 || user_password.length()>6) {
-            _passwordText.setError("Pin length should be 4 - 6 digits.");
+            _passwordText.setError("Pin length should be between 4 - 6 digits.");
             valid = false;
         } else {
             _passwordText.setError(null);
         }
         return valid;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        callbackManager.onActivityResult(requestCode, resultCode, data);
+        super.onActivityResult(requestCode, resultCode, data);
     }
 }

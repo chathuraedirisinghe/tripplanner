@@ -24,20 +24,22 @@
                 android:textColor="@android:color/white"
                 android:layout_weight="1"
                 android:text="Duration" />
+
             <TextView
-                android:textStyle="bold"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/white"
                 android:layout_weight="1"
-                android:text="Cost" />
+                android:text="Cost (Rs)"
+                android:textColor="@android:color/white"
+                android:textStyle="bold" />
+
             <TextView
-                android:textStyle="bold"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Charger"
                 android:textColor="@android:color/white"
-                android:layout_weight="1"
-                android:text="Charger ID" />
+                android:textStyle="bold" />
         </TableRow>
 
 

@@ -8,9 +8,11 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -22,6 +24,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import com.jlanka.jltripplanner.GoogleAnalyticsService;
 import com.jlanka.jltripplanner.R;
@@ -115,14 +118,14 @@ public class HistoryFragment extends Fragment {
             try{
                 for ( i = 0 ; i < jsonResponse.length() ; i++ ){
                     JSONObject history_row = jsonResponse.getJSONObject(i);
-                    final String date = history_row.getString("start_datetime").substring(0,10);
-                    final String duration = history_row.getString("duration");
-                    final String cost = history_row.getString("cost");
-                    final String station_id = history_row.getString("charging_station");
-
+                    System.out.println(history_row);
+                    String date = history_row.getString("start_datetime").substring(0,10);
+                    int duration = history_row.getInt("duration");
+                    double cost = history_row.getDouble("cost");
+                    String station_id = history_row.getString("charging_station");
 
                     TableRow tr = new TableRow(getActivity());
-                    tr.setPadding(5,0,5,0);
+                    tr.setLayoutParams(new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
                     if(i%2==0){
                         tr.setBackgroundColor(Color.rgb(207, 211, 214));
@@ -131,16 +134,32 @@ public class HistoryFragment extends Fragment {
                     }
 
                     TextView c1 = new TextView(getActivity());
+                    c1.setTextSize(12);
                     c1.setText(date);
 
                     TextView c2 = new TextView(getActivity());
-                    c2.setText(duration);
+                    c2.setTextSize(12);
+                    c2.setGravity(Gravity.END);
+                    if (duration > 59) {
+                        int hours = duration / 60; //since both are ints, you get an int
+                        int minutes = duration % 60;
+
+                        if (hours > 1)
+                            c2.setText(hours + "hrs " + minutes + "mins");
+                        else
+                            c2.setText(hours + "hr " + minutes + "mins");
+                    } else
+                        c2.setText(duration + "mins");
+
 
                     TextView c3 = new TextView(getActivity());
-                    c3.setText(cost);
+                    c3.setText(Math.round(cost)+"    ");
+                    c3.setGravity(Gravity.END);
+                    c3.setTextSize(12);
 
                     TextView c4 = new TextView(getActivity());
                     c4.setText(station_id);
+                    c4.setTextSize(12);
 
                     tr.addView(c1);
                     tr.addView(c2);
@@ -148,7 +167,6 @@ public class HistoryFragment extends Fragment {
                     tr.addView(c4);
                     lastExpensesTable.addView(tr);
                 }
-
             }catch (JSONException e){
 
             }

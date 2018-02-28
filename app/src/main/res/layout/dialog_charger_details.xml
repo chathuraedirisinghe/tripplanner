@@ -233,11 +233,12 @@
         <TextView
             android:id="@+id/dcd_price"
             android:layout_width="wrap_content"
-            android:layout_height="80dp"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
             android:layout_weight="1"
             android:background="@drawable/textview_rounded_corner"
             android:elevation="5dp"
+            android:paddingVertical="15dp"
             android:gravity="center"
             android:shadowColor="@color/colorPrimaryDark"
             android:text="Rs. 75/unit"
@@ -285,4 +286,10 @@
             android:layout_height="wrap_content"
             android:text="Rs.1500.00" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/dcd_cost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Rs.1500.00" />
 </LinearLayout>

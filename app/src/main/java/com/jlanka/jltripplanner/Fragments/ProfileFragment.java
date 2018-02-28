@@ -109,11 +109,12 @@ public class ProfileFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 EditProfileDialog dpf=new EditProfileDialog();
-                dpf.init(user.get(SessionManager.user_id),_fname.getText().toString(),_lname.getText().toString(),_mobile.getText().toString(),
+                dpf.init(user.get(SessionManager.user_id),_fname.getText().toString(),_lname.getText().toString(),_mobile.getText().toString(),user.get(SessionManager.user_email),
                         user.get(SessionManager.user_name),user.get(SessionManager.pass_word),new OnResponseListner() {
                     @Override
                     public void onResponse(String response) {
                         dpf.dismiss();
+                        Toast.makeText(getActivity(), "Profile edit successful", Toast.LENGTH_SHORT).show();
                         reloadSession(user_id,user.get(SessionManager.pass_word));
                     }
                 });
@@ -288,14 +289,13 @@ public class ProfileFragment extends Fragment {
                 JSONArray reg = null;
                 JSONArray vin = null;
                 String message = null;
-                System.out.println(obj);
                 try {
                     if (obj.has("reg_no")) {
                         reg = obj.getJSONArray("reg_no");
-                        message = "Reg no : " + reg.get(0).toString().substring(0, 1).toUpperCase() + reg.get(0).toString().substring(1);
+                        message = "Reg no : " + reg.get(0).toString();
                     } else if (obj.has("vin")) {
                         vin = obj.getJSONArray("vin");
-                        message = "Vin : " + vin.get(0).toString().substring(0, 1).toUpperCase() + vin.get(0).toString().substring(1);
+                        message = "Vin : " + vin.get(0).toString();
                     } else
                         message = error;
                 } catch (Exception e) {

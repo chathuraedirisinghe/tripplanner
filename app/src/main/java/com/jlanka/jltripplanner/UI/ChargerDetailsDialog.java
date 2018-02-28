@@ -70,7 +70,7 @@ public class ChargerDetailsDialog extends DialogFragment{
         type.setText(charger.getType());
         power.setText(Math.round(charger.getPower())+" kW");
 
-        price.setText("Rs."+Math.round(charger.getPrice())+" kWh\u207B\u00B9");
+        price.setText("Rs."+Math.round(charger.getPrice())+" /kWh");
 
         if (charger.getType().equals("AC")) {
             duration.setText("3½ to 4 hrs");

@@ -102,7 +102,6 @@ public class GeofenceMonitor implements GoogleApiClient.ConnectionCallbacks, Goo
     @SuppressLint("MissingPermission")
     public void startGeofencing() throws IllegalStateException{
         if (!googleApiClient.isConnected()) {
-            Log.d(TAG,"API not connected");
             return;
         }
 
@@ -115,7 +114,6 @@ public class GeofenceMonitor implements GoogleApiClient.ConnectionCallbacks, Goo
                 // transition is observed.
                 getGeofencePendingIntent()
         ).setResultCallback(this); // Result processed in onResult().
-        Log.d(TAG,"Geofencing started");
     }
 
 
@@ -128,10 +126,8 @@ public class GeofenceMonitor implements GoogleApiClient.ConnectionCallbacks, Goo
     @Override
     public void onResult(Status status) {
         if (status.isSuccess()) {
-            Log.d(TAG,"Geofence created successfully");
         }
         else {
-            Log.d(TAG,"Error creating Geofence");
         }
     }
 }

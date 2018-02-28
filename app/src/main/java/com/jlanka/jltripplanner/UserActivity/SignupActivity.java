@@ -50,6 +50,7 @@ public class SignupActivity extends Activity {
     private static final String TAG = "SignupActivity";
     private LoginButton loginButton;
     private CallbackManager callbackManager;
+    private ProfileTracker mProfileTracker;
     @BindView(R.id.sign_form) LinearLayout form;
     @BindView(R.id.singup_buttons) LinearLayout buttonsLayout;
     @BindView(R.id.input_username) EditText _username;
@@ -155,7 +156,7 @@ public class SignupActivity extends Activity {
             }
         });
 
-        ProfileTracker mProfileTracker = new ProfileTracker() {
+        mProfileTracker = new ProfileTracker() {
             @Override
             protected void onCurrentProfileChanged(Profile oldProfile, Profile newProfile) {
                 // Fetch user details from New Profile
@@ -418,5 +419,11 @@ public class SignupActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         callbackManager.onActivityResult(requestCode, resultCode, data);
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mProfileTracker.stopTracking();
     }
 }

@@ -999,33 +999,35 @@ public class MapFragment extends Fragment implements
                 dlgAlert.setPositiveButton(positiveButtonText, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        switch (failedMethod) {
-                            case "getAddressSuggestions":
-                                getAddressSuggestions(passedQuery[0].toString());
-                                break;
-                            case "searchLocationByName":
-                                searchLocationByName(passedQuery[0].toString());
-                                break;
-                            case "setDestinationOnClick":
-                                setDestinationOnClick((LatLng) passedQuery[0]);
-                                break;
-                            case "checkRoute":
-                                checkRoute(passedQuery[0].toString(), (LatLng) passedQuery[1], (LatLng) passedQuery[2],
-                                        passedQuery[3].toString(), passedQuery[4].toString());
-                                break;
-                            case "route":
-                                setDestinationOnClick((LatLng) passedQuery[1]);
-                                route((LatLng) passedQuery[0], (LatLng) passedQuery[1], (ArrayList) passedQuery[2]);
-                                break;
-                            case "getResponse":
-                                getResponse((Double) passedQuery[0], (Double) passedQuery[1]);
-                                break;
-                            case "generateReceipt":
-                                generateReceipt((String)passedQuery[0]);
-                                break;
-                            case "getChargerInfoWindow":
-                                getChargerInfoWindow((Charger)passedQuery[0]);
-                                break;
+                        if (failedMethod!=null) {
+                            switch (failedMethod) {
+                                case "getAddressSuggestions":
+                                    getAddressSuggestions(passedQuery[0].toString());
+                                    break;
+                                case "searchLocationByName":
+                                    searchLocationByName(passedQuery[0].toString());
+                                    break;
+                                case "setDestinationOnClick":
+                                    setDestinationOnClick((LatLng) passedQuery[0]);
+                                    break;
+                                case "checkRoute":
+                                    checkRoute(passedQuery[0].toString(), (LatLng) passedQuery[1], (LatLng) passedQuery[2],
+                                            passedQuery[3].toString(), passedQuery[4].toString());
+                                    break;
+                                case "route":
+                                    setDestinationOnClick((LatLng) passedQuery[1]);
+                                    route((LatLng) passedQuery[0], (LatLng) passedQuery[1], (ArrayList) passedQuery[2]);
+                                    break;
+                                case "getResponse":
+                                    getResponse((Double) passedQuery[0], (Double) passedQuery[1]);
+                                    break;
+                                case "generateReceipt":
+                                    generateReceipt((String) passedQuery[0]);
+                                    break;
+                                case "getChargerInfoWindow":
+                                    getChargerInfoWindow((Charger) passedQuery[0]);
+                                    break;
+                            }
                         }
                         ad.dismiss();
                         ad=null;
@@ -1036,16 +1038,18 @@ public class MapFragment extends Fragment implements
                     dlgAlert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            switch (failedMethod) {
-                                case "route":
-                                    removeDestinationMarker();
-                                    break;
-                                case "checkRoute":
-                                    removeDestinationMarker();
-                                    break;
+                            if (failedMethod != null) {
+                                switch (failedMethod) {
+                                    case "route":
+                                        removeDestinationMarker();
+                                        break;
+                                    case "checkRoute":
+                                        removeDestinationMarker();
+                                        break;
+                                }
+                                ad.dismiss();
+                                ad = null;
                             }
-                            ad.dismiss();
-                            ad=null;
                         }
                     });
                 }

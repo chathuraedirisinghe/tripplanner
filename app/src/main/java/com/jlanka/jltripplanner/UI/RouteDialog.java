@@ -1,5 +1,6 @@
 package com.jlanka.jltripplanner.UI;
 
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
@@ -7,6 +8,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.model.LatLng;
@@ -20,6 +22,7 @@ import org.json.JSONArray;
 
 public class RouteDialog extends DialogFragment{
     private DialogInterface.OnClickListener clickListener;
+    private AlertDialog dialog;
     private TextView tv;
     EditText et;
 
@@ -39,6 +42,7 @@ public class RouteDialog extends DialogFragment{
         builder.setView(view);
         builder.setPositiveButton("OK", clickListener);
         android.app.AlertDialog dialog = builder.create();
+        dialog.setCancelable(false);
         return dialog;
     }
 

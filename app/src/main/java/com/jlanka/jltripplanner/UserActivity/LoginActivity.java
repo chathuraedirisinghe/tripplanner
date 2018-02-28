@@ -189,7 +189,6 @@ public class LoginActivity extends AppCompatActivity {
                 }
                 try {
                     JSONObject jsonResponse = new JSONObject(response);
-                    Log.w("Login Response   ", String.valueOf(jsonResponse));
                     String status = jsonResponse.getString("status");
                     String id = jsonResponse.getString("id");
 
@@ -238,7 +237,6 @@ public class LoginActivity extends AppCompatActivity {
                 new OnResponseListner() {
                     @Override
                     public void onResponse(String response) {
-                        Log.w("User Details : ", String.valueOf(response));
                         try {
                             JSONObject user_data = new JSONObject(response);
                             String id = user_data.getString("id");

@@ -104,8 +104,6 @@ public class SignupActivity extends Activity {
                             @Override
                             public void onCompleted(JSONObject object,GraphResponse response) {
 
-                                Log.v("LoginActivity Response ", response.toString());
-
                                 try {
 
                                     if (object.has("email")) {
@@ -237,7 +235,6 @@ public class SignupActivity extends Activity {
                         }
                         try {
                             JSONObject jsonResponse = new JSONObject(response);
-                            Log.w("Register Response   ", String.valueOf(jsonResponse));
                             if (jsonResponse.getString("id").isEmpty()){
                                 accountCreateFailed();
                             }else{

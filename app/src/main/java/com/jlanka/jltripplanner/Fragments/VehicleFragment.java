@@ -181,7 +181,6 @@ public class VehicleFragment extends Fragment {
                 new OnResponseListner() {
                     @Override
                     public void onResponse(String response) {
-                        Log.w("User Details : ", String.valueOf(response));
                         try{
                             pd.dismiss();
                             JSONObject user_data = new JSONObject(response);
@@ -229,7 +228,6 @@ public class VehicleFragment extends Fragment {
         new OnResponseListner() {
             @Override
             public void onResponse(String response) {
-                Log.w("User Details : ", String.valueOf(response));
                 try{
                     JSONObject user_data = new JSONObject(response);
                     JSONObject VehicleDetails = new JSONObject(response);

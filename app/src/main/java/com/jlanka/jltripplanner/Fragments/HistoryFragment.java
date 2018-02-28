@@ -23,6 +23,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -77,7 +80,6 @@ public class HistoryFragment extends Fragment {
         new OnResponseListner() {
             @Override
             public void onResponse(String response) {
-                Log.w("User Details : ", String.valueOf(response));
                 try{
                     JSONArray jsonResponse = new JSONArray(response);
                     updateLastExpenses(jsonResponse);
@@ -118,7 +120,6 @@ public class HistoryFragment extends Fragment {
             try{
                 for ( i = 0 ; i < jsonResponse.length() ; i++ ){
                     JSONObject history_row = jsonResponse.getJSONObject(i);
-                    System.out.println(history_row);
                     String date = history_row.getString("start_datetime").substring(0,10);
                     int duration = history_row.getInt("duration");
                     double cost = history_row.getDouble("cost");
@@ -129,37 +130,41 @@ public class HistoryFragment extends Fragment {
 
                     if(i%2==0){
                         tr.setBackgroundColor(Color.rgb(207, 211, 214));
-                    }else{
-
                     }
 
+                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+                    Date startDate = simpleDateFormat.parse(history_row.getString("start_datetime"));
+                    SimpleDateFormat dateFormat=new SimpleDateFormat("dd MMM - hh:mm a");
+
                     TextView c1 = new TextView(getActivity());
-                    c1.setTextSize(12);
-                    c1.setText(date);
+                    c1.setTextSize(10);
+                    c1.setText(dateFormat.format(startDate));
 
                     TextView c2 = new TextView(getActivity());
                     c2.setTextSize(12);
-                    c2.setGravity(Gravity.END);
+                    c2.setPadding(0,0,5,0);
+                    c2.setGravity(Gravity.RIGHT);
                     if (duration > 59) {
                         int hours = duration / 60; //since both are ints, you get an int
                         int minutes = duration % 60;
 
                         if (hours > 1)
-                            c2.setText(hours + "hrs " + minutes + "mins");
+                            c2.setText(hours + " hrs " + minutes + " mins");
                         else
-                            c2.setText(hours + "hr " + minutes + "mins");
+                            c2.setText(hours + " hr " + minutes + " mins");
                     } else
-                        c2.setText(duration + "mins");
+                        c2.setText(duration + " mins");
 
 
                     TextView c3 = new TextView(getActivity());
                     c3.setText(Math.round(cost)+"    ");
+                    c3.setPadding(0,0,5,0);
                     c3.setGravity(Gravity.END);
                     c3.setTextSize(12);
 
                     TextView c4 = new TextView(getActivity());
                     c4.setText(station_id);
-                    c4.setTextSize(12);
+                    c4.setTextSize(10);
 
                     tr.addView(c1);
                     tr.addView(c2);
@@ -169,6 +174,8 @@ public class HistoryFragment extends Fragment {
                 }
             }catch (JSONException e){
 
+            } catch (ParseException e) {
+                e.printStackTrace();
             }
 
     }

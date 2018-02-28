@@ -288,8 +288,9 @@
     </LinearLayout>
 
     <TextView
-        android:id="@+id/dcd_cost"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Rs.1500.00" />
+        android:textColor="@android:color/holo_red_light"
+        android:textSize="10sp"
+        android:text="* estimated based on chargin from 20% to 80% of battery capacity" />
 </LinearLayout>

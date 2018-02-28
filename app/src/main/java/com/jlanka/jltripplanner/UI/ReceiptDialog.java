@@ -167,9 +167,9 @@ public class ReceiptDialog extends DialogFragment {
                                         int minutes = dur % 60;
 
                                         if (hours > 1)
-                                            rec_dur.setText(hours + "hrs " + minutes + "mins");
+                                            rec_dur.setText(hours + " hrs " + minutes + " mins");
                                         else
-                                            rec_dur.setText(hours + "hr " + minutes + "mins");
+                                            rec_dur.setText(hours + " hr " + minutes + " mins");
                                     } else
                                         rec_dur.setText(dur + " mins");
                                     progressLayout.setVisibility(View.GONE);

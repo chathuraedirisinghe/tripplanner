@@ -223,7 +223,7 @@ public class ProfileFragment extends Fragment {
                 ar.add(model+"   "+reg_no);
             }
         } catch (Throwable t) {
-            Log.e("My App", "Could not parse malformed JSON: \"" + t + "\"");
+
         }
 
         String[] myVehicle = ar.toArray(new String[0]);
@@ -264,7 +264,6 @@ public class ProfileFragment extends Fragment {
         new OnResponseListner() {
             @Override
             public void onResponse(String response) {
-                Log.w("User Details : ", String.valueOf(response));
                 try{
                     JSONObject VehicleDetails = new JSONObject(response);
                     JSONArray _vehicles = new JSONArray(session.getVehicles());
@@ -334,7 +333,6 @@ public class ProfileFragment extends Fragment {
                 new OnResponseListner() {
                     @Override
                     public void onResponse(String response) {
-                        Log.w("User Details : ", String.valueOf(response));
                         try {
                             JSONObject user_data = new JSONObject(response);
                             String id = user_data.getString("id");

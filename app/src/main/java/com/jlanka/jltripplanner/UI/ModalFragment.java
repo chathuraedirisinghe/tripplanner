@@ -76,7 +76,6 @@ public class ModalFragment extends DialogFragment{
                     public void onResponse(String response) {
                         try {
                             JSONObject jsonResponse = new JSONObject(response);
-                            Log.w("Activate Response   ", String.valueOf(jsonResponse));
 
                             String title = jsonResponse.getString("activated");
                             if(title.equals("0")){

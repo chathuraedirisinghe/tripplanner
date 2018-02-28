@@ -45,7 +45,6 @@ public class GeofenceMonitorService extends IntentService {
         // Handling errors
         if ( geofencingEvent.hasError() ) {
             String errorMsg = getErrorString(geofencingEvent.getErrorCode() );
-            Log.e( TAG, errorMsg );
             return;
         }
 
@@ -94,7 +93,6 @@ public class GeofenceMonitorService extends IntentService {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private void sendNotification(String uId,String title,String message ) {
-        Log.i(TAG, "sendNotification: " + title + message );
 
         Intent intent = new Intent(this,MainActivity.class);
         if (uId.equals("Charger_Location")) {

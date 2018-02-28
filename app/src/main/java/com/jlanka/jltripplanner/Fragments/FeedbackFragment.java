@@ -62,7 +62,6 @@ public class FeedbackFragment extends Fragment {
         ,new OnResponseListner() {
             @Override
             public void onResponse(String response) {
-                Log.w("User Details : ", String.valueOf(response));
                 try{
                     JSONArray jsonResponse = new JSONArray(response);
                     updateLastExpenses(jsonResponse);

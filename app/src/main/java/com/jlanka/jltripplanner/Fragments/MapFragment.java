@@ -315,6 +315,9 @@ public class MapFragment extends Fragment implements
                         checkRoute(vin, new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), destinatonMarker.getPosition(), "30", rd.getRange());
                         dialog.dismiss();
                     }
+                    else{
+                        Toast.makeText(getActivity(), "Invalid range entered", Toast.LENGTH_LONG).show();
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -356,11 +359,8 @@ public class MapFragment extends Fragment implements
                 if ((Math.abs(currentLatitude-mLastLocation.getLatitude())>0.001) && (Math.abs(currentLongitude-mLastLocation.getLongitude())>0.0001)){
                     currentLatitude = Math.floor(mLastLocation.getLatitude()*100)/100;
                     currentLongitude = Math.floor(mLastLocation.getLongitude()*10000)/10000;
-//            Log.w("Mewwa ",latLng.toString());
-//            Toast.makeText(getActivity(), "Location    " + currentLatitude+"     "+currentLongitude, Toast.LENGTH_SHORT).show();
-                        getResponse(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+                    getResponse(mLastLocation.getLatitude(), mLastLocation.getLongitude());
                 }else{
-//            Toast.makeText(getActivity(), "OK", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -561,7 +561,6 @@ public class MapFragment extends Fragment implements
         new OnResponseListner() {
             @Override
             public void onResponse(String response) {
-                Log.w("Stations Details  : ", String.valueOf(response));
                 try {
                             if(response.equals("[]")){
                             }else{
@@ -661,7 +660,6 @@ public class MapFragment extends Fragment implements
     }
 
     public void stationUpdater(JSONArray stations){
-        Log.e("Station Updater","Started");
         try{
             ArrayList<Charger>chargersToDraw=new ArrayList<>();
             for(int i=0; i < stations.length();i++){
@@ -692,7 +690,6 @@ public class MapFragment extends Fragment implements
 
                     chargingStations.add(c);
                     chargersToDraw.add(c);
-                    Log.e("Charger ID", c.getDevice_id());
                 }
             }
             addMarkers(chargersToDraw);
@@ -741,6 +738,7 @@ public class MapFragment extends Fragment implements
                                 if (selectedMarker.equals(c.getDevice_id())) {
                                     _charger_availability.setText(" " + c.getState());
                                     _charger_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState()));
+                                    updateBottomSheet(c);
                                 }
                                 return;
                             }

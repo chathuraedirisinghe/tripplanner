@@ -32,14 +32,12 @@ public class MQTTPublisher {
         mqttClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean b, String s) {
-                Log.w("mqtt", s);
             }
             @Override
             public void connectionLost(Throwable throwable) {
             }
             @Override
             public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
-                Log.w("Mqtt", mqttMessage.toString());
             }
             @Override
             public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
@@ -69,7 +67,6 @@ public class MQTTPublisher {
                 }
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    Log.w("Mqtt", "Failed to connect to: " + serverUri + exception.toString());
                 }
             });
         } catch (MqttException ex){

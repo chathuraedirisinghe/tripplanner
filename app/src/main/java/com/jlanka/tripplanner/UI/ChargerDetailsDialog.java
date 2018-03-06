@@ -113,7 +113,7 @@ public class ChargerDetailsDialog extends DialogFragment{
                                 ownerLayout.setVisibility(View.VISIBLE);
                                 contactLayout.setVisibility(View.VISIBLE);
                                 owner.setText(responseObject.getString("first_name")+" "+responseObject.getString("last_name"));
-                                contact.setText("0"+responseObject.getString("contact_number"));
+                                contact.setText(responseObject.getString("contact_number"));
 
 //                                hideProgress();
                             }

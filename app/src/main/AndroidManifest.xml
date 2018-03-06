@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.jlanka.jltripplanner">
+    package="com.jlanka.tripplanner">
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="com.javapapers.android.googleplacesdetail.permission.MAPS_RECEIVE" />
@@ -18,13 +18,13 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:name="com.jlanka.jltripplanner.GoogleAnalyticsService"
+        android:name="com.jlanka.tripplanner.GoogleAnalyticsService"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
         <activity
-            android:name="com.jlanka.jltripplanner.MainActivity"
+            android:name="com.jlanka.tripplanner.MainActivity"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar">
@@ -34,20 +34,20 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.jlanka.jltripplanner.UserActivity.LoginActivity"
+            android:name="com.jlanka.tripplanner.UserActivity.LoginActivity"
             android:label="@string/title_activity_login"
             android:screenOrientation="portrait" />
         <activity
-            android:name="com.jlanka.jltripplanner.UserActivity.SignupActivity"
+            android:name="com.jlanka.tripplanner.UserActivity.SignupActivity"
             android:label="@string/title_activity_signup"
             android:screenOrientation="portrait" />
         <activity
-            android:name="com.jlanka.jltripplanner.WelcomeActivity"
+            android:name="com.jlanka.tripplanner.WelcomeActivity"
             android:label="Welcome"
             android:screenOrientation="portrait" />
 
         <activity
-            android:name="com.jlanka.jltripplanner.UserActivity.ForgotPassword"
+            android:name="com.jlanka.tripplanner.UserActivity.ForgotPassword"
             android:label="ForgotPassword"
             android:screenOrientation="portrait" />
 
@@ -63,7 +63,7 @@
                 "keyboard|keyboardHidden|screenLayout|screenSize|orientation"
             android:label="@string/app_name" />
 
-        <service android:name="com.jlanka.jltripplanner.GeofenceMonitorService"/>
+        <service android:name="com.jlanka.tripplanner.GeofenceMonitorService"/>
         <service android:name="org.eclipse.paho.android.service.MqttService" />
     </application>
 

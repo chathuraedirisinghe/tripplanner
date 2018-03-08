@@ -57,8 +57,7 @@ public class FeedbackFragment extends Fragment {
         String url = "ev_owners/charging_history/"+user_id+"/";
 
         ServerConnector.getInstance(getActivity()).cancelRequest("GetHistory");
-        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+url,null,Request.Method.GET
-        ,new OnResponseListner() {
+        ServerConnector.getInstance(getActivity()).getRequest(ServerConnector.SERVER_ADDRESS+url,new OnResponseListner() {
             @Override
             public void onResponse(String response) {
                 try{

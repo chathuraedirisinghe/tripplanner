@@ -1,27 +1,27 @@
 {
   "project_info": {
-    "project_number": "607684735142",
-    "firebase_url": "https://lostfound-fad7f.firebaseio.com",
-    "project_id": "lostfound-fad7f",
-    "storage_bucket": "lostfound-fad7f.appspot.com"
+    "project_number": "456405268719",
+    "firebase_url": "https://jl-trip-planner.firebaseio.com",
+    "project_id": "jl-trip-planner",
+    "storage_bucket": "jl-trip-planner.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:607684735142:android:42a5cd2f3203a121",
+        "mobilesdk_app_id": "1:456405268719:android:de3953ef3d16b10b",
         "android_client_info": {
-          "package_name": "com.phonegap.startrack"
+          "package_name": "com.jlanka.tripplanner"
         }
       },
       "oauth_client": [
         {
-          "client_id": "607684735142-5tmavuc7bfc0jojil8ra4fcc4jkk1j62.apps.googleusercontent.com",
+          "client_id": "456405268719-6u3c1sb7ae5i8721gofbcjsgpfond4h3.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCRCm2s4VhwTAjhveRYVtMjZ3iLPuii5A0"
+          "current_key": "AIzaSyB0v7WkRSfnPkScz4jYvo8_xoiDcGyNIn4"
         }
       ],
       "services": {
@@ -31,50 +31,6 @@
         "appinvite_service": {
           "status": 1,
           "other_platform_oauth_client": []
-        },
-        "ads_service": {
-          "status": 2
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:607684735142:android:a0b7f9438c6fa522",
-        "android_client_info": {
-          "package_name": "goev.android.chathura.goevmobilesolution"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "607684735142-o377e8i9pfu6e3jj61q8a7vbnpocm35s.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "goev.android.chathura.goevmobilesolution",
-            "certificate_hash": "36e425e5f9ac4252a2292db6a53310bd69d6d557"
-          }
-        },
-        {
-          "client_id": "607684735142-5tmavuc7bfc0jojil8ra4fcc4jkk1j62.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCRCm2s4VhwTAjhveRYVtMjZ3iLPuii5A0"
-        }
-      ],
-      "services": {
-        "analytics_service": {
-          "status": 1
-        },
-        "appinvite_service": {
-          "status": 2,
-          "other_platform_oauth_client": [
-            {
-              "client_id": "607684735142-5tmavuc7bfc0jojil8ra4fcc4jkk1j62.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
         },
         "ads_service": {
           "status": 2

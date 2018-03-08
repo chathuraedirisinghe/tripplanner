@@ -38,6 +38,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 
 /**
  * Created by Workstation on 2/24/2018.
@@ -48,13 +49,13 @@ public class ReceiptDialog extends DialogFragment {
     private int id;
     private View view;
     private AlertDialog dialog;
-    private ArrayList<Charger> chargers;
+    private Charger charger;
     private String vehiclesString="";
     private OnErrorListner errorListener;
 
-    public void init(int id, ArrayList<Charger> chargers, String vehiclesString,OnErrorListner errorListner){
+    public void init(int id,Charger charger, String vehiclesString,OnErrorListner errorListner){
         this.id=id;
-        this.chargers=chargers;
+        this.charger=charger;
         this.vehiclesString=vehiclesString;
         this.errorListener=errorListner;
     }
@@ -85,7 +86,7 @@ public class ReceiptDialog extends DialogFragment {
         dialog.show();
         dialog.setCancelable(false);
         dialog.setCanceledOnTouchOutside(false);
-        dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setTextColor(R.color.neutralColor);
+        dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setTextColor(getResources().getColor(R.color.neutralColor));
         dialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
         dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setEnabled(false);
         dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener() {
@@ -99,7 +100,7 @@ public class ReceiptDialog extends DialogFragment {
 
     private void getResponse(View view,android.app.AlertDialog dialog){
         ServerConnector.getInstance(getActivity()).cancelRequest("GetReceipt");
-        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+"charging_sessions/"+id,null, Request.Method.GET,
+        ServerConnector.getInstance(getActivity()).getRequest(ServerConnector.SERVER_ADDRESS+"charging_sessions/"+id,
                 new OnResponseListner() {
                     @TargetApi(Build.VERSION_CODES.O)
                     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -133,14 +134,10 @@ public class ReceiptDialog extends DialogFragment {
                                         }
                                     }
 
-                                    for (Charger c : chargers) {
-                                        if (c.getId() == obj.getInt("charging_station")) {
-                                            ch_id.setText(c.getDevice_id());
-                                            ch_type.setText(c.getType());
-                                            ch_power.setText(c.getPower() + " kW");
-                                            rec_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState()));
-                                        }
-                                    }
+                                    ch_id.setText(charger.getDevice_id());
+                                    ch_type.setText(charger.getType());
+                                    ch_power.setText(charger.getPower() + " kW");
+                                    rec_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(charger.getType(), charger.getState()));
 
                                     rec_total.setText("Rs."+Math.round(obj.getDouble("cost")));
 

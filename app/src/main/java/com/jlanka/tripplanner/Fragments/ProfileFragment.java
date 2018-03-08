@@ -324,7 +324,7 @@ public class ProfileFragment extends Fragment {
 
     private void reloadSession(String id, final String password) {
         ServerConnector.getInstance(getActivity()).cancelRequest("getUserDetails");
-        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS + "ev_owners/" + id + "/", null, Request.Method.GET,
+        ServerConnector.getInstance(getActivity()).getRequest(ServerConnector.SERVER_ADDRESS + "ev_owners/" + id + "/",
                 new OnResponseListner() {
                     @Override
                     public void onResponse(String response) {

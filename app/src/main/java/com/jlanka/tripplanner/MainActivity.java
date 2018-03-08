@@ -77,9 +77,9 @@ public class MainActivity extends AppCompatActivity
             CaocConfig.Builder.create()
                     .backgroundMode(CaocConfig.BACKGROUND_MODE_SILENT) //default: CaocConfig.BACKGROUND_MODE_SHOW_CUSTOM
                     .enabled(true) //default: true
-                    .showErrorDetails(false) //default: true
+                    .showErrorDetails(false) //default: truefalse
                     .showRestartButton(true) //default: true
-                    .logErrorOnRestart(false) //default: true
+                    .logErrorOnRestart(false) //default: truefalse
                     .trackActivities(true) //default: false
                     .minTimeBetweenCrashesMs(2000) //default: 3000
                     .errorDrawable(R.mipmap.ic_launcher) //default: bug image
@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity
         }
 
         if ( isExternalStorageWritable() ) {
-            File appDirectory = new File( Environment.getExternalStorageDirectory() + "/GoEV_log" );
+            File appDirectory = new File( Environment.getExternalStorageDirectory() + "/JL Trip Planner" );
             File logDirectory = new File( appDirectory + "/log" );
             File logFile = new File( logDirectory, "logcat" + System.currentTimeMillis() + ".txt" );
             // create app folder
@@ -157,7 +157,6 @@ public class MainActivity extends AppCompatActivity
                 if (mContent==null)
                     mContent= new MapFragment();
 
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
                     fragmentManager.beginTransaction().replace(R.id.content_frame, mContent).commit();
             }
         }
@@ -234,10 +233,8 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_settings) {
             fragmentManager.beginTransaction().replace(R.id.content_frame, new SettingsFragment()).addToBackStack(SettingsFragment.class.getName()).commit();
         } else if (id == R.id.nav_logout) {
-            session.logoutUser();
-
             ServerConnector.getInstance(getApplicationContext()).cancelRequest("Logout");
-            ServerConnector.getInstance(getApplicationContext()).sendRequest(ServerConnector.SERVER_ADDRESS+"ev_owners/logout/",null,Request.Method.GET,
+            ServerConnector.getInstance(getApplicationContext()).getRequest(ServerConnector.SERVER_ADDRESS+"ev_owners/logout/",
             new OnResponseListner() {
                 @Override
                 public void onResponse(String response) {
@@ -269,6 +266,7 @@ public class MainActivity extends AppCompatActivity
                     alertDialog.show();
                 }
             },"Logout");
+            session.logoutUser();
         }
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);

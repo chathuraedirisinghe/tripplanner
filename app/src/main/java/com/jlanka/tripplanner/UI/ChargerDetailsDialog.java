@@ -96,7 +96,7 @@ public class ChargerDetailsDialog extends DialogFragment{
 
     private void getResponse(int owner_id,ProgressBar progress,LinearLayout ownerLayout,LinearLayout contactLayout,TextView owner,TextView contact){
         ServerConnector.getInstance(getActivity()).cancelRequest("GetOwner");
-        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+"profile/"+owner_id,null, Request.Method.GET,
+        ServerConnector.getInstance(getActivity()).getRequest(ServerConnector.SERVER_ADDRESS+"profile/"+owner_id,
                 new OnResponseListner() {
                     @RequiresApi(api = Build.VERSION_CODES.M)
                     @Override

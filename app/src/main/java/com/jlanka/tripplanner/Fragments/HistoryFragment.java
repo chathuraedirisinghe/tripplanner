@@ -72,7 +72,7 @@ public class HistoryFragment extends Fragment {
         String url = "ev_owners/charging_history/"+user_id+"/";
 
         ServerConnector.getInstance(getActivity()).cancelRequest("GetChargingHistory");
-        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+url,null,Request.Method.GET,
+        ServerConnector.getInstance(getActivity()).getRequest(ServerConnector.SERVER_ADDRESS+url,
         new OnResponseListner() {
             @Override
             public void onResponse(String response) {

@@ -41,7 +41,6 @@ import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
-import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
@@ -53,6 +52,12 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 import com.google.maps.android.ui.IconGenerator;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -121,9 +126,9 @@ public class MapFragment extends Fragment implements
 
     //--------------Thiwanka--------------
     public static boolean routed;
-    private ArrayList<Marker> markers;
+    private HashMap<String,Marker> markers;
     private static Marker destinatonMarker;
-    private ArrayList<Charger> chargingStations;
+    private HashMap<String,Charger>chargingStations;
 
     public static Context currentContext;
 
@@ -189,9 +194,7 @@ public class MapFragment extends Fragment implements
         mView=inflater.inflate(R.layout.fragment_map,container,false);
         ButterKnife.bind(this,mView);
 
-        currentContext = getActivity().getApplicationContext();
-
-        getCurrentLocation(true);
+        currentContext = getActivity();
         container = (ViewGroup) getActivity().findViewById(R.id.cordinator_layout);
 
 
@@ -242,7 +245,7 @@ public class MapFragment extends Fragment implements
         });
 
         //----------------------Thiwanka--------------------------------------
-        GoogleAnalyticsService.getInstance().setScreenName(this.getClass().getSimpleName());
+        //GoogleAnalyticsService.getInstance().setScreenName(this.getClass().getSimpleName());
         chargers=new ArrayList<>();
 
         fabLegend.setAlpha(0.75f);
@@ -250,6 +253,7 @@ public class MapFragment extends Fragment implements
             @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
             @Override
             public void onClick(View view) {
+                addListener(1);
                 LegendDialog ld = new LegendDialog();
                 ld.show(getFragmentManager(),"Legend");
             }
@@ -335,14 +339,13 @@ public class MapFragment extends Fragment implements
     @Override
     public void onPause() {
         super.onPause();
-        LocationMonitor.instance(getActivity().getApplicationContext()).stop();
     }
 
     public void getCurrentLocation(boolean zoomToLocation){
-        LocationMonitor.instance(getActivity().getApplicationContext()).onChange(new Workable<GPSPoint>() {
+        LocationMonitor.instance(getActivity()).onChange(new Workable<GPSPoint>() {
             @Override
             public void work(GPSPoint gpsPoint) {
-                mLastLocation=new Location("");
+                mLastLocation = new Location("");
                 mLastLocation.setLatitude(Double.parseDouble(gpsPoint.getLatitude().toString()));
                 mLastLocation.setLongitude(Double.parseDouble(gpsPoint.getLongitude().toString()));
 
@@ -351,11 +354,11 @@ public class MapFragment extends Fragment implements
                 }
 
                 latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                if ((Math.abs(currentLatitude-mLastLocation.getLatitude())>0.001) && (Math.abs(currentLongitude-mLastLocation.getLongitude())>0.0001)){
-                    currentLatitude = Math.floor(mLastLocation.getLatitude()*100)/100;
-                    currentLongitude = Math.floor(mLastLocation.getLongitude()*10000)/10000;
+                if ((Math.abs(currentLatitude - mLastLocation.getLatitude()) > 0.001) && (Math.abs(currentLongitude - mLastLocation.getLongitude()) > 0.0001)) {
+                    currentLatitude = Math.floor(mLastLocation.getLatitude() * 100) / 100;
+                    currentLongitude = Math.floor(mLastLocation.getLongitude() * 10000) / 10000;
                     getResponse(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                }else{
+                } else {
                 }
             }
         });
@@ -385,13 +388,7 @@ public class MapFragment extends Fragment implements
         if (marker.getTag().equals("Destination_Marker"))
             marker.showInfoWindow();
         else if (!marker.getTag().equals("Polyline_InfoWindow")) {
-            for (Charger c : chargingStations) {
-                if (c.getDevice_id().equals(marker.getTag())) {
-                    updateBottomSheet(c);
-                    break;
-                }
-
-            }
+            updateBottomSheet(chargingStations.get(marker.getTag()));
         }
 
         chargingStation=marker;
@@ -435,64 +432,65 @@ public class MapFragment extends Fragment implements
     @SuppressLint("MissingPermission")
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        MapsInitializer.initialize(getActivity());
-        mGoogleMap=googleMap;
-
-        googleMap.setOnMarkerClickListener(this);
-        googleMap.setOnCameraIdleListener(this);
-        googleMap.setOnCameraMoveStartedListener(this);
-        googleMap.setOnCameraMoveListener(this);
-        googleMap.setOnCameraMoveCanceledListener(this);
-
-        googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-        googleMap.getUiSettings().setMapToolbarEnabled(false);
-        mGoogleMap.setLatLngBoundsForCameraTarget(new LatLngBounds(new LatLng(5.774857, 79.579479),new LatLng(9.876957, 81.767971)));
-        mGoogleMap.setMinZoomPreference(7f);
-        fabLegend.setVisibility(View.VISIBLE);
-        fsv.setVisibility(View.VISIBLE);
-
-        UIHelper helper = UIHelper.getInstance(getActivity());
-        mGoogleMap.setPadding(0,helper.getMarginInDp(55),helper.getMarginInDp(2),0);
-
         if (checkLocationPermission()) {
-            LocationManager locationManager = (LocationManager)getActivity().getSystemService(Context.LOCATION_SERVICE);
+            mGoogleMap = googleMap;
+            getCurrentLocation(true);
+
+            googleMap.setOnMarkerClickListener(this);
+            googleMap.setOnCameraIdleListener(this);
+            googleMap.setOnCameraMoveStartedListener(this);
+            googleMap.setOnCameraMoveListener(this);
+            googleMap.setOnCameraMoveCanceledListener(this);
+
+            googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+            googleMap.getUiSettings().setMapToolbarEnabled(false);
+            mGoogleMap.setLatLngBoundsForCameraTarget(new LatLngBounds(new LatLng(5.774857, 79.579479), new LatLng(9.876957, 81.767971)));
+            mGoogleMap.setMinZoomPreference(7f);
+            fabLegend.setVisibility(View.VISIBLE);
+            fsv.setVisibility(View.VISIBLE);
+
+            UIHelper helper = UIHelper.getInstance(getActivity());
+            mGoogleMap.setPadding(0, helper.getMarginInDp(55), helper.getMarginInDp(2), 0);
+
+            LocationManager locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
             mLastLocation = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
             mGoogleMap.setMyLocationEnabled(true);
 
-            if (mLastLocation!=null) {
+            if (mLastLocation != null) {
                 mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), 14.0f));
             }
 
-            if (markers!=null){
-                markers=new ArrayList<>();
+            if (markers != null) {
+                markers = new HashMap<>();
                 addMarkers(chargingStations);
             }
-        }
 
-        //---------------Thiwanka-----------------
-        if (firstLoad && mLastLocation!=null) {
-            firstLoad = false;
-        }
 
-        mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-            @Override
-            public void onMapClick(LatLng point) {
-                if (!isCharging)
-                    collapseBottomSheet();
-                else
-                    return;
+            //---------------Thiwanka-----------------
+            if (firstLoad && mLastLocation != null) {
+                firstLoad = false;
             }
-        });
 
-        mGoogleMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
-            @Override
-            public void onMapLongClick(LatLng latLng) {
-                if (!isCharging)
-                    setDestinationOnClick(latLng);
-                else
-                    return;
-            }
-        });
+            mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+                @Override
+                public void onMapClick(LatLng point) {
+                    if (!isCharging)
+                        collapseBottomSheet();
+                    else
+                        return;
+                }
+            });
+
+            mGoogleMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+                @Override
+                public void onMapLongClick(LatLng latLng) {
+                    if (!isCharging)
+                        setDestinationOnClick(latLng);
+                    else
+                        return;
+                }
+            });
+        }
     }
 
     @Override
@@ -552,7 +550,7 @@ public class MapFragment extends Fragment implements
         String charging_address = "charging_stations/";
 
         ServerConnector.getInstance(getActivity()).cancelRequest("ChargingStations");
-        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+charging_address,null,Request.Method.GET,
+        ServerConnector.getInstance(getActivity()).getRequest(ServerConnector.SERVER_ADDRESS+charging_address,
         new OnResponseListner() {
             @Override
             public void onResponse(String response) {
@@ -579,19 +577,20 @@ public class MapFragment extends Fragment implements
         },"ChargingStations");
     }
 
-    private void addMarkers(ArrayList<Charger> chargersToDraw){
+    private void addMarkers(HashMap<String,Charger> chargersToDraw){
         if (markers==null)
-            markers=new ArrayList<>();
+            markers=new HashMap<>();
 
         if (chargersToDraw.size()<1)
             chargerLoadingMessage.setVisibility(View.GONE);
 
-        for (Charger c:chargersToDraw) {
+        for (String key:chargersToDraw.keySet()) {        //loop 5-6 - constant time
+            Charger c=chargersToDraw.get(key);
             Marker chargerMarker = mGoogleMap.addMarker(c.getMarkerOptions());
             chargerMarker.setIcon(BitmapDescriptorFactory.fromBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState())));
             chargerMarker.setTag(c.getDevice_id());
             startMqtt(c.getDevice_id());
-            markers.add(chargerMarker);
+            markers.put(c.getDevice_id(),chargerMarker);
         }
     }
 
@@ -656,18 +655,15 @@ public class MapFragment extends Fragment implements
 
     public void stationUpdater(JSONArray stations){
         try{
-            ArrayList<Charger>chargersToDraw=new ArrayList<>();
-            for(int i=0; i < stations.length();i++){
+            HashMap<String,Charger>chargersToDraw=new HashMap<>();
+            for(int i=0; i < stations.length();i++){        //loop 5-6 - nested loop
+
                 if (chargingStations==null)
-                    chargingStations=new ArrayList<>();
+                    chargingStations=new HashMap<>();
 
                 JSONObject charger = stations.getJSONObject(i);
 
-                boolean found=false;
-                for (Charger cc:chargingStations){
-                    if (cc.getDevice_id().equals(charger.getString("device_id")))
-                        found=true;
-                }
+                boolean found=chargingStations.containsKey(charger.getString("device_id"));
 
                 if (!found) {
                     Charger c = new Charger(
@@ -683,8 +679,8 @@ public class MapFragment extends Fragment implements
                             charger.getBoolean("availability")
                     );
 
-                    chargingStations.add(c);
-                    chargersToDraw.add(c);
+                    chargingStations.put(charger.getString("device_id"),c);
+                    chargersToDraw.put(charger.getString("device_id"),c);
                 }
             }
             addMarkers(chargersToDraw);
@@ -719,40 +715,26 @@ public class MapFragment extends Fragment implements
     }
 
     private void updateItemArray(String charger_id, String charger_current_status){
-
         if (chargingStations!=null) {
-            for (Charger c : chargingStations) {
-                if (c.getDevice_id().equals(charger_id)) {
-                    if (!c.getState().equals(charger_current_status)) {
-                        c.setState(charger_current_status);
-                        for (Marker m : markers) {
-                            if (m.getTag().equals(c.getDevice_id())) {
-                                m.setIcon(BitmapDescriptorFactory.fromBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState())));
-                                chargerLoadingMessage.setVisibility(View.INVISIBLE);
+            Charger c=chargingStations.get(charger_id);
+            if (c!=null && !c.getState().equals(charger_current_status)) {
+                c.setState(charger_current_status);
+                Marker m=markers.get(charger_id);
 
-                                if (selectedMarker.equals(c.getDevice_id())) {
-                                    _charger_availability.setText(" " + c.getState());
-                                    _charger_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState()));
-                                    updateBottomSheet(c);
-                                }
-                                return;
-                            }
-                        }
-                    } else
-                        return;
+                if (m!=null) {
+                    m.setIcon(BitmapDescriptorFactory.fromBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState())));
+                    chargerLoadingMessage.setVisibility(View.INVISIBLE);
+
+                    if (selectedMarker.equals(c.getDevice_id())) {
+                        _charger_availability.setText(" " + c.getState());
+                        _charger_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState()));
+                        updateBottomSheet(c);
+                    }
+                    return;
                 }
-            }
+            } else
+                return;
         }
-        /*for(int i=0; i < stations_object.length();i++){
-            charger_array = stations_object.getJSONObject(i);
-            final String chargerid = charger_array.getString("device_id").toLowerCase();
-            final String charger_previous_status = charger_array.getString("availability");
-
-            if (chargerid.equals(charger_id) && (charger_previous_status!=charger_current_status)){
-                stations_object.getJSONObject(i).put("availability",charger_current_status);
-
-            }
-        }*/
     }
 
     private void addStateSubscriber() {
@@ -913,8 +895,8 @@ public class MapFragment extends Fragment implements
 
         }
 
-        MQTTPublisher mqttPublisher = new MQTTPublisher(getActivity().getApplicationContext(),"tcp://development.enetlk.com:1883");
-        mqttPublisher.publishToTopic(payload.toString(),getActivity().getApplicationContext());
+        MQTTPublisher mqttPublisher = new MQTTPublisher(getActivity(),"tcp://development.enetlk.com:1883");
+        mqttPublisher.publishToTopic(payload.toString(),getActivity());
     }
 
     public void stopCharge(String session_id){
@@ -946,8 +928,8 @@ public class MapFragment extends Fragment implements
             e.printStackTrace();
 
         }
-        MQTTPublisher mqttPublisher = new MQTTPublisher(getActivity().getApplicationContext(),"tcp://development.enetlk.com:1883");
-        mqttPublisher.publishToTopic(payload.toString(),getActivity().getApplicationContext());
+        MQTTPublisher mqttPublisher = new MQTTPublisher(getActivity(),"tcp://development.enetlk.com:1883");
+        mqttPublisher.publishToTopic(payload.toString(),getActivity());
         collapseBottomSheet();
     }
 
@@ -1064,7 +1046,7 @@ public class MapFragment extends Fragment implements
 
         }
         catch(Exception e){
-            GoogleAnalyticsService.getInstance().trackException(getActivity().getApplicationContext(), e);
+            GoogleAnalyticsService.getInstance().trackException(getActivity(), e);
         }
     }
 
@@ -1102,7 +1084,7 @@ public class MapFragment extends Fragment implements
                                 // Extract the Place descriptions from the results
                                 if (predsJsonArray != null) {
                                     resultList = new ArrayList<FoundSuggestion>(predsJsonArray.length());
-                                    for (int i = 0; i < predsJsonArray.length(); i++) {
+                                    for (int i = 0; i < predsJsonArray.length(); i++) {     //loop 5-10 contant time
                                         FoundSuggestion fs = new FoundSuggestion(predsJsonArray.getJSONObject(i).getString("place_id"), predsJsonArray.getJSONObject(i).getString("description").replace(", Sri Lanka", ""));
                                         resultList.add(fs);
                                     }
@@ -1153,7 +1135,7 @@ public class MapFragment extends Fragment implements
             e.printStackTrace();
         }
 
-        ServerConnector.getInstance(getActivity().getApplicationContext()).sendRequest(url.toString(), null, Request.Method.POST,
+        ServerConnector.getInstance(getActivity()).sendRequest(url.toString(), null, Request.Method.POST,
             new OnResponseListner() {
                 @Override
                 public void onResponse(String response) {
@@ -1272,7 +1254,7 @@ public class MapFragment extends Fragment implements
                             JSONArray ids = responseObject.getJSONArray("charging_station_ids");
                             ArrayList<LatLng> chargerLocations = new ArrayList<>();
 
-                            for (int i = 0; i < chargers.length(); i++) {
+                            for (int i = 0; i < chargers.length(); i++) {       //loop 1-2 - nested loop
                                 String chargerLocation = chargers.get(i).toString();
                                 if (chargerLocation != null && !chargerLocation.equals("[]")) {
                                     String latLng[] = chargerLocation.split(",");
@@ -1323,7 +1305,7 @@ public class MapFragment extends Fragment implements
             //sb.append("&types=(regions)");
             sb.append("&destination=" + destination);
 
-            for(int i=0;i<chargerLocations.size();i++) {
+            for(int i=0;i<chargerLocations.size();i++) {        //loop 1-2 constant time
                 if (i==0)
                     sb.append("&waypoints=");
 
@@ -1352,7 +1334,7 @@ public class MapFragment extends Fragment implements
                                 // Create a JSON object hierarchy from the results
                                 JSONObject responseObject = new JSONObject(response);
                                 JSONArray routesArray = responseObject.getJSONArray("routes");
-                                for (int i = 0; i < routesArray.length(); i++) {
+                                for (int i = 0; i < routesArray.length(); i++) {        //loop abt 50 (legs) constant time
                                     jsonLegs = routesArray.getJSONObject(i).getJSONArray("legs");
                                     Route route = new Route(start, end, jsonLegs, chargerLocations);
                                     routes.add(route);
@@ -1370,13 +1352,13 @@ public class MapFragment extends Fragment implements
                                                 if (size > 2)
                                                     size = 2;
 
-                                                for (int i = 0; i < size; i++) {
+                                                for (int i = 0; i < size; i++) {        //loop abt 1-2 - nested loop
                                                     List<List<HashMap<String, String>>> result = RouteParseHelper.init().parse(routes.get(i).getRoute());
                                                     ArrayList<LatLng> points;
                                                     PolylineOptions lineOptions = null;
 
                                                     // Traversing through all the routes
-                                                    for (int p = 0; p < result.size(); p++) {
+                                                    for (int p = 0; p < result.size(); p++) {       //loop 10-50
                                                         points = new ArrayList<LatLng>();
                                                         lineOptions = new PolylineOptions();
 
@@ -1384,7 +1366,7 @@ public class MapFragment extends Fragment implements
                                                         List<HashMap<String, String>> path = result.get(p);
 
                                                         // Fetching all the points in i-th route
-                                                        for (int j = 0; j < path.size(); j++) {
+                                                        for (int j = 0; j < path.size(); j++) {     //loop 4-8
                                                             HashMap<String, String> point = path.get(j);
 
                                                             double lat = Double.parseDouble(point.get("lat"));
@@ -1399,15 +1381,15 @@ public class MapFragment extends Fragment implements
                                                         lineOptions.width(15);
                                                     }
 
-                                                    TextView text = new TextView(getActivity().getApplicationContext());
-                                                    IconGenerator generator = new IconGenerator(getActivity().getApplicationContext());
+                                                    TextView text = new TextView(getActivity());
+                                                    IconGenerator generator = new IconGenerator(getActivity());
 
                                                     if (i == 0) {
                                                         lineOptions.color(Color.argb(250, 69, 151, 255));
                                                         lineOptions.zIndex(2l);
 
                                                         text.setTextColor(Color.WHITE);
-                                                        generator.setBackground(getActivity().getApplicationContext().getDrawable(R.drawable.ideal_route_info));
+                                                        generator.setBackground(getActivity().getDrawable(R.drawable.ideal_route_info));
 
                                                         int mid = lineOptions.getPoints().size() / 2;
                                                         LatLng latLng = lineOptions.getPoints().get(mid);
@@ -1435,7 +1417,7 @@ public class MapFragment extends Fragment implements
 
                                 //adding geofence
                                 if (!chargerLocations.isEmpty()) {
-                                    for (LatLng charger : chargerLocations)
+                                    for (LatLng charger : chargerLocations)     //loop 0-2 - constant time
                                         createGeofence(charger, "Charger_Location");
                                 }
                                 //createGeofence(end,"Destination");
@@ -1469,7 +1451,7 @@ public class MapFragment extends Fragment implements
 
     private void removeDestinationMarker(){
         if (routeLines!=null) {
-            for(Polyline pl:routeLines){
+            for(Polyline pl:routeLines){        //loop 0-2 - constant time
                 pl.remove();
             }
             routeLines.clear();
@@ -1478,7 +1460,7 @@ public class MapFragment extends Fragment implements
         removeGeofences();
 
         if(infoMarkers!=null) {
-            for (Marker m : infoMarkers) {
+            for (Marker m : infoMarkers) {      //loop 0-1 - constant time
                 m.remove();
             }
             infoMarkers.clear();
@@ -1590,7 +1572,7 @@ public class MapFragment extends Fragment implements
                 .strokeWidth(2);
         circles.add(mGoogleMap.addCircle(circleOptions));
 
-        GeofenceMonitor geofenceSingleton = GeofenceMonitor.getInstance(getActivity().getApplicationContext());
+        GeofenceMonitor geofenceSingleton = GeofenceMonitor.getInstance(getActivity());
         Location geofence = new Location("");
         geofence.setLatitude(location.latitude);
         geofence.setLongitude(location.longitude);
@@ -1600,13 +1582,13 @@ public class MapFragment extends Fragment implements
 
     private void removeGeofences(){
         if (circles!=null) {
-            for(Circle c:circles){
+            for(Circle c:circles){      //loop 1-3 - constant time
                 c.remove();
             }
             circles.clear();
         }
 
-        GeofenceMonitor geofenceSingleton = GeofenceMonitor.getInstance(getActivity().getApplicationContext());
+        GeofenceMonitor geofenceSingleton = GeofenceMonitor.getInstance(getActivity());
         geofenceSingleton.removeGeofences();
     }
 
@@ -1625,7 +1607,7 @@ public class MapFragment extends Fragment implements
         sBuf.append("&travelmode=driving&dir_action=navigate");
 
         if (chargers != null) {
-            for(int i=0;i<chargers.size();i++) {
+            for(int i=0;i<chargers.size();i++) {        //looop 0-2 - constant time
                 if (i==0)
                     sBuf.append("&waypoints=");
 
@@ -1670,12 +1652,12 @@ public class MapFragment extends Fragment implements
     }
 
     private void trackError(Exception e){
-        GoogleAnalyticsService.getInstance().trackException(getActivity().getApplicationContext(),e);
+        GoogleAnalyticsService.getInstance().trackException(getActivity(),e);
     }
 
     private void generateReceipt(String charging_session_id){
         ReceiptDialog rd = new ReceiptDialog();
-        rd.init(Integer.parseInt(charging_session_id),chargingStations,session.getVehicles(), new OnErrorListner() {
+        rd.init(Integer.parseInt(charging_session_id),chargingStations.get(selectedMarker),session.getVehicles(), new OnErrorListner() {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onError(String error, JSONObject obj) {
@@ -1690,7 +1672,28 @@ public class MapFragment extends Fragment implements
     public void onResume() {
         super.onResume();
         collapseBottomSheet();
-        checkLocationPermission();
-        getCurrentLocation(true);
+        if (checkLocationPermission())
+            getCurrentLocation(true);
+    }
+
+    private void addListener(int id){
+        DatabaseReference database = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference myRef = database.child("ChargingSession").child(id+"");
+
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                updateItemArray(dataSnapshot.getKey(),dataSnapshot.getValue().toString());
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                System.out.println(databaseError);
+            }
+        });
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
     }
 }

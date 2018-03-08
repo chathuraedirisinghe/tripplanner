@@ -54,7 +54,7 @@ public class LoginActivity extends AppCompatActivity {
         checkNetwork();
 
         // Session Manager
-        session = new SessionManager(getApplicationContext());
+        session = new SessionManager(this);
 
         _loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -112,7 +112,7 @@ public class LoginActivity extends AppCompatActivity {
         String username = _usernameText.getText().toString();
         String password = _passwordText.getText().toString();
 
-        // TODO: Implement--> Get Data from Database.
+        // TODO: Implement--> Get Data from Database
         getServerResponse(username,password);
 
     }
@@ -123,23 +123,6 @@ public class LoginActivity extends AppCompatActivity {
         Intent i = new Intent(getApplicationContext(), MainActivity.class);
         startActivity(i);
         finish();
-    }
-
-    public void onLoginFailed() {
-        AlertDialog alertDialog = new AlertDialog.Builder(LoginActivity.this).create();
-        alertDialog.setTitle("Invalid Credentials");
-        alertDialog.setMessage("Please check your mobile number & PIN number again...");
-        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-        alertDialog.show();
-
-//        Toast.makeText(getBaseContext(), "Login failed", Toast.LENGTH_LONG).show();
-        _passwordText.setText("");
-        _loginButton.setEnabled(true);
     }
 
     public boolean validate() {
@@ -178,7 +161,7 @@ public class LoginActivity extends AppCompatActivity {
         params.put("password", password);
 
         ServerConnector.getInstance(getApplicationContext()).cancelRequest("CheckUser");
-        ServerConnector.getInstance(getApplicationContext()).sendRequest(ServerConnector.SERVER_ADDRESS+"ev_owners/login/",params,Request.Method.POST,
+        ServerConnector.getInstance(getApplicationContext()).login(params,
         new OnResponseListner() {
             @Override
             public void onResponse(String response) {
@@ -190,11 +173,12 @@ public class LoginActivity extends AppCompatActivity {
                     JSONObject jsonResponse = new JSONObject(response);
                     String status = jsonResponse.getString("status");
                     String id = jsonResponse.getString("id");
+                    String token = jsonResponse.getString("token");
 
                     if(status.equals("Login success")){
                         GoogleAnalyticsService.getInstance().setUser(username,"Login");
                         getUserDetails(id, password);
-
+                        session.setToken(token);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -232,7 +216,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void getUserDetails(String id, final String password) {
         ServerConnector.getInstance(getApplicationContext()).cancelRequest("getUserDetails");
-        ServerConnector.getInstance(getApplicationContext()).sendRequest(ServerConnector.SERVER_ADDRESS + "ev_owners/" + id + "/", null, Request.Method.GET,
+        ServerConnector.getInstance(getApplicationContext()).getRequest(ServerConnector.SERVER_ADDRESS + "ev_owners/" + id + "/",
                 new OnResponseListner() {
                     @Override
                     public void onResponse(String response) {
@@ -287,15 +271,8 @@ public class LoginActivity extends AppCompatActivity {
                 "getUserDetails");
     }
 
-    private void send_verification_email() {
-    }
-
     public static String getMobilenumber() {
         return mobilenumber;
-    }
-
-    public static void setMobilenumber(String mobilenumber) {
-        LoginActivity.mobilenumber = mobilenumber;
     }
 
     public void checkNetwork(){

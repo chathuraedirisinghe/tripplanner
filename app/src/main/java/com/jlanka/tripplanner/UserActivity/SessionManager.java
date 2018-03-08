@@ -46,6 +46,7 @@ public class SessionManager {
     public static final String user_email = "email";
     public static final String electric_vehicles = "ev";
     public static final String user_occupation = "occupation";
+    public static final String token = "token";
     public static final String user_nic = "nic";
     public static final String user_altmobno = "altmobno";
     public static final String user_chargingStation = "userstation";
@@ -217,6 +218,15 @@ public class SessionManager {
     public void setVehicles(JSONArray vehicles) {
         editor.putString(electric_vehicles, String.valueOf(vehicles));
         editor.commit();
+    }
+
+    public void setToken(String token){
+        editor.putString(this.token,String.valueOf(token));
+        editor.commit();
+    }
+
+    public String getToken(){
+        return pref.getString(token,null);
     }
 
     public String getVehicles(){

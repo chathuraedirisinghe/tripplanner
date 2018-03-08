@@ -172,7 +172,7 @@ public class VehicleFragment extends Fragment {
         ProgressDialog pd = ProgressDialog.show(getActivity(), "", "Please Wait...", true);
 
         ServerConnector.getInstance(getActivity()).cancelRequest("GetUser");
-        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS+"ev_owners/"+user_id+"/",null,Request.Method.GET,
+        ServerConnector.getInstance(getActivity()).getRequest(ServerConnector.SERVER_ADDRESS+"ev_owners/"+user_id+"/",
 
                 new OnResponseListner() {
                     @Override

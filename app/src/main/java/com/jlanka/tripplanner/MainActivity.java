@@ -69,7 +69,6 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Stetho.initializeWithDefaults(this);
-        //checkNetwork();
         checkLocationPermission();
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -294,23 +293,6 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    /*public void checkNetwork(){
-        String ss = NetworkUtil.getConnectivityStatusString(this);
-        if(ss.contains("Not connected")){
-            AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
-            alertDialog.setTitle("No Internet");
-            alertDialog.setMessage("Please check your internet Connection & try again...");
-            alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Exit",
-                    new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                            finish();
-                            System.exit(0);
-                        }
-                    });
-            alertDialog.show();
-        }
-    }*/
 
     /* Checks if external storage is available for read and write */
     public boolean isExternalStorageWritable() {
@@ -360,19 +342,14 @@ public class MainActivity extends AppCompatActivity
     public void onRequestPermissionsResult(int requestCode,String permissions[], int[] grantResults) {
         switch (requestCode) {
             case MY_PERMISSIONS_REQUEST_LOCATION: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    // permission was granted, yay! Do the
-                    // location-related task you need to do.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED) {
-                        fragmentManager.beginTransaction().replace(R.id.content_frame, new MapFragment()).commit();
+                        if (mContent==null)
+                            mContent= new MapFragment();
+
+                        fragmentManager.beginTransaction().replace(R.id.content_frame, mContent).commit();
                     }
                 } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
                     if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
                         checkLocationPermission();
                     }

@@ -3,6 +3,7 @@ package com.jlanka.tripplanner.Fragments;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Fragment;
+import android.app.FragmentManager;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -245,7 +246,7 @@ public class MapFragment extends Fragment implements
         });
 
         //----------------------Thiwanka--------------------------------------
-        //GoogleAnalyticsService.getInstance().setScreenName(this.getClass().getSimpleName());
+        GoogleAnalyticsService.getInstance().setScreenName(this.getClass().getSimpleName());
         chargers=new ArrayList<>();
 
         fabLegend.setAlpha(0.75f);
@@ -336,11 +337,6 @@ public class MapFragment extends Fragment implements
         }
     }
 
-    @Override
-    public void onPause() {
-        super.onPause();
-    }
-
     public void getCurrentLocation(boolean zoomToLocation){
         LocationMonitor.instance(getActivity()).onChange(new Workable<GPSPoint>() {
             @Override
@@ -353,6 +349,9 @@ public class MapFragment extends Fragment implements
                     mCurrLocationMarker.remove();
                 }
 
+                if (zoomToLocation==true)
+                    zoomToLocation(gpsPoint.getLatLng(),15,0);
+
                 latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
                 if ((Math.abs(currentLatitude - mLastLocation.getLatitude()) > 0.001) && (Math.abs(currentLongitude - mLastLocation.getLongitude()) > 0.0001)) {
                     currentLatitude = Math.floor(mLastLocation.getLatitude() * 100) / 100;
@@ -360,12 +359,13 @@ public class MapFragment extends Fragment implements
                     getResponse(mLastLocation.getLatitude(), mLastLocation.getLongitude());
                 } else {
                 }
+                LocationMonitor.instance(getActivity()).stop();
             }
         });
     }
 
     private boolean checkLocationPermission() {
-        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(currentContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             permissionLayout.setVisibility(View.VISIBLE);
             return false;
         }
@@ -404,13 +404,18 @@ public class MapFragment extends Fragment implements
             @Override
             public void onClick(View v) {
                 float[] distance = new float[2];
-                Location.distanceBetween(marker.getPosition().latitude, marker.getPosition().longitude,
-                        mLastLocation.getLatitude(), mLastLocation.getLongitude(), distance);
-
-                if (distance[0] > 100)
-                    notifyOnError("You need to be within 100m of the charging station");
-                else
-                    chargeNow(_charger_id.getTag().toString());
+                if (mLastLocation!=null) {
+                    Location.distanceBetween(marker.getPosition().latitude, marker.getPosition().longitude,
+                            mLastLocation.getLatitude(), mLastLocation.getLongitude(), distance);
+                    if (distance[0] > 100)
+                        notifyOnError("You need to be within 100m of the charging station");
+                    else
+                        chargeNow(_charger_id.getTag().toString());
+                }
+                else {
+                    notifyOnError("Unable to retrieve current location");
+                    getCurrentLocation(true);
+                }
             }
         });
         return false;
@@ -432,65 +437,65 @@ public class MapFragment extends Fragment implements
     @SuppressLint("MissingPermission")
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        mGoogleMap = googleMap;
+        googleMap.setOnMarkerClickListener(this);
+        googleMap.setOnCameraIdleListener(this);
+        googleMap.setOnCameraMoveStartedListener(this);
+        googleMap.setOnCameraMoveListener(this);
+        googleMap.setOnCameraMoveCanceledListener(this);
+
+        googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        googleMap.getUiSettings().setMapToolbarEnabled(false);
+        mGoogleMap.setLatLngBoundsForCameraTarget(new LatLngBounds(new LatLng(5.774857, 79.579479), new LatLng(9.876957, 81.767971)));
+        mGoogleMap.setMinZoomPreference(7f);
+        fabLegend.setVisibility(View.VISIBLE);
+        fsv.setVisibility(View.VISIBLE);
+
+        UIHelper helper = UIHelper.getInstance(getActivity());
+        mGoogleMap.setPadding(0, helper.getMarginInDp(55), helper.getMarginInDp(2), 0);
+
         if (checkLocationPermission()) {
-            mGoogleMap = googleMap;
-            getCurrentLocation(true);
-
-            googleMap.setOnMarkerClickListener(this);
-            googleMap.setOnCameraIdleListener(this);
-            googleMap.setOnCameraMoveStartedListener(this);
-            googleMap.setOnCameraMoveListener(this);
-            googleMap.setOnCameraMoveCanceledListener(this);
-
-            googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-            googleMap.getUiSettings().setMapToolbarEnabled(false);
-            mGoogleMap.setLatLngBoundsForCameraTarget(new LatLngBounds(new LatLng(5.774857, 79.579479), new LatLng(9.876957, 81.767971)));
-            mGoogleMap.setMinZoomPreference(7f);
-            fabLegend.setVisibility(View.VISIBLE);
-            fsv.setVisibility(View.VISIBLE);
-
-            UIHelper helper = UIHelper.getInstance(getActivity());
-            mGoogleMap.setPadding(0, helper.getMarginInDp(55), helper.getMarginInDp(2), 0);
-
             LocationManager locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
             mLastLocation = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
             mGoogleMap.setMyLocationEnabled(true);
-
-            if (mLastLocation != null) {
-                mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), 14.0f));
-            }
-
-            if (markers != null) {
-                markers = new HashMap<>();
-                addMarkers(chargingStations);
-            }
-
-
-            //---------------Thiwanka-----------------
-            if (firstLoad && mLastLocation != null) {
-                firstLoad = false;
-            }
-
-            mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-                @Override
-                public void onMapClick(LatLng point) {
-                    if (!isCharging)
-                        collapseBottomSheet();
-                    else
-                        return;
-                }
-            });
-
-            mGoogleMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
-                @Override
-                public void onMapLongClick(LatLng latLng) {
-                    if (!isCharging)
-                        setDestinationOnClick(latLng);
-                    else
-                        return;
-                }
-            });
+            getCurrentLocation(true);
         }
+
+        if (mLastLocation != null) {
+            mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), 14.0f));
+        }
+
+        if (markers != null) {
+            markers = new HashMap<>();
+            addMarkers(chargingStations);
+        }
+
+
+        //---------------Thiwanka-----------------
+        if (firstLoad && mLastLocation != null) {
+            firstLoad = false;
+        }
+
+        mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng point) {
+                if (!isCharging)
+                    collapseBottomSheet();
+                else
+                    return;
+            }
+        });
+
+        mGoogleMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng latLng) {
+                if (!isCharging)
+                    setDestinationOnClick(latLng);
+                else
+                    return;
+            }
+        });
+
     }
 
     @Override
@@ -605,10 +610,6 @@ public class MapFragment extends Fragment implements
 
         _charger_availability.setText(" " + c.getState());
         _charger_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState()));
-
-        float[] distance = new float[2];
-        Location.distanceBetween( c.getPosition().latitude, c.getPosition().longitude,
-                mLastLocation.getLatitude(), mLastLocation.getLongitude(), distance);
 
         if (c.getState().equals("Available")) {
             _chargenow_btn.setEnabled(true);
@@ -1672,8 +1673,21 @@ public class MapFragment extends Fragment implements
     public void onResume() {
         super.onResume();
         collapseBottomSheet();
-        if (checkLocationPermission())
+        if (checkLocationPermission()) {
+            if (mGoogleMap!=null) {
+                mGoogleMap.setMyLocationEnabled(true);
+            }
             getCurrentLocation(true);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if (checkLocationPermission()) {
+            LocationMonitor.instance(getActivity()).stop();
+        }
     }
 
     private void addListener(int id){

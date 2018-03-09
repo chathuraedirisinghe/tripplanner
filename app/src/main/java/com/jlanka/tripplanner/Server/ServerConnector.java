@@ -78,6 +78,7 @@ public class ServerConnector {
             public Map<String, String> getHeaders() {
                 Map<String, String>  params = new HashMap<String, String>();
                 if (sessionManager.getToken()!=null) {
+                    System.out.println(sessionManager.getToken());
                     params.put("Authorization", "Token " + sessionManager.getToken());
                 }
                 return params;

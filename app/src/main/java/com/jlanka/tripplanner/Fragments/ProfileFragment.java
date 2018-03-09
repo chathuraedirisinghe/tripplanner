@@ -317,6 +317,7 @@ public class ProfileFragment extends Fragment {
                     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
                     @Override
                     public void onError(String error, JSONObject obj) {
+                        System.out.println(error+","+obj);
                         Toast.makeText(getActivity(), error, Toast.LENGTH_SHORT).show();
                     }
                 },"SendVehicleData");

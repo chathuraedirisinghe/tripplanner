@@ -86,27 +86,27 @@ public class MainActivity extends AppCompatActivity
                     .apply();
         }
 
-        if ( isExternalStorageWritable() ) {
-            File appDirectory = new File( Environment.getExternalStorageDirectory() + "/JL Trip Planner" );
-            File logDirectory = new File( appDirectory + "/log" );
-            File logFile = new File( logDirectory, "logcat" + System.currentTimeMillis() + ".txt" );
+        if (isExternalStorageWritable()) {
+            File appDirectory = new File(Environment.getExternalStorageDirectory() + "/JL Trip Planner");
+            File logDirectory = new File(appDirectory + "/log");
+            File logFile = new File(logDirectory, "logcat" + System.currentTimeMillis() + ".txt");
             // create app folder
-            if ( !appDirectory.exists() ) {
+            if (!appDirectory.exists()) {
                 appDirectory.mkdir();
             }
             // create log folder
-            if ( !logDirectory.exists() ) {
+            if (!logDirectory.exists()) {
                 logDirectory.mkdir();
             }
             // clear the previous logcat and then write the new one to the file
             try {
-                Process process = Runtime.getRuntime().exec( "logcat -c");
-                process = Runtime.getRuntime().exec( "logcat -f " + logFile + " *:S MyActivity:D MyActivity2:D");
-            } catch ( IOException e ) {
+                Process process = Runtime.getRuntime().exec("logcat -c");
+                process = Runtime.getRuntime().exec("logcat -f " + logFile + " *:S MyActivity:D MyActivity2:D");
+            } catch (IOException e) {
                 e.printStackTrace();
             }
 
-        } else if ( isExternalStorageReadable() ) {
+        } else if (isExternalStorageReadable()) {
             // only readable
         } else {
             // not accessible
@@ -139,27 +139,21 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         View header = navigationView.getHeaderView(0);
-        TextView nameView = (TextView)header.findViewById(R.id.user_name);
-        creditView = (TextView)header.findViewById(R.id.user_credit);
-        TextView userMob = (TextView)header.findViewById(R.id.user_mobile);
+        TextView nameView = (TextView) header.findViewById(R.id.user_name);
+        creditView = (TextView) header.findViewById(R.id.user_credit);
+        TextView userMob = (TextView) header.findViewById(R.id.user_mobile);
 
-        nameView.setText(fname+" "+lname);
+        nameView.setText(fname + " " + lname);
         setUser_credit(user_credit);
         userMob.setText(user_mobile);
 
-        if(session.isFirstTimeLaunch()){
+        if (session.isFirstTimeLaunch()) {
             startActivity(new Intent(MainActivity.this, WelcomeActivity.class));
             finish();
-        }else if(vehicles==null || vehicles.equals("[]")){
-                fragmentManager.beginTransaction().replace(R.id.content_frame, new VehicleFragment()).commit();
-            }else{
-                if (mContent==null)
-                    mContent= new MapFragment();
-
-                    fragmentManager.beginTransaction().replace(R.id.content_frame, mContent).commit();
-            }
+        } else {
+            checkVehicles();
         }
-
+    }
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -215,15 +209,7 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
         FragmentTransaction transaction;
         if (id == R.id.nav_home) {
-            vehicles=session.getVehicles();
-            if(vehicles==null || vehicles.equals("[]")){
-                fragmentManager.beginTransaction().replace(R.id.content_frame, new VehicleFragment()).addToBackStack(VehicleFragment.class.getName()).commit();
-            }else{
-                if (mContent==null)
-                    mContent=new MapFragment();
-
-                fragmentManager.beginTransaction().replace(R.id.content_frame,mContent).addToBackStack(MapFragment.class.getName()).commit();
-            }
+            checkVehicles();
         } else if (id == R.id.nav_history) {
             fragmentManager.beginTransaction().replace(R.id.content_frame, new HistoryFragment()).addToBackStack(HistoryFragment.class.getName()).commit();
         } else if (id == R.id.nav_payment) {
@@ -296,7 +282,6 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-
     /* Checks if external storage is available for read and write */
     public boolean isExternalStorageWritable() {
         String state = Environment.getExternalStorageState();
@@ -317,6 +302,18 @@ public class MainActivity extends AppCompatActivity
     }
 
     //--------------------------------Thiwanka-------------------------------------
+    private void checkVehicles(){
+        vehicles=session.getVehicles();
+        if(vehicles==null || vehicles.equals("[]")){
+            fragmentManager.beginTransaction().replace(R.id.content_frame, new VehicleFragment()).commit();
+        }else{
+            if (mContent==null)
+                mContent=new MapFragment();
+
+            fragmentManager.beginTransaction().replace(R.id.content_frame,mContent).commit();
+        }
+    }
+
     private void checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Should we show an explanation?
@@ -347,10 +344,7 @@ public class MainActivity extends AppCompatActivity
             case MY_PERMISSIONS_REQUEST_LOCATION: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED) {
-                        if (mContent==null)
-                            mContent= new MapFragment();
-
-                        fragmentManager.beginTransaction().replace(R.id.content_frame, mContent).commit();
+                        checkVehicles();
                     }
                 } else {
                     if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {

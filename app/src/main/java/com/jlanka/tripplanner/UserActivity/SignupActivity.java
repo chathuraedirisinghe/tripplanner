@@ -252,12 +252,14 @@ public class SignupActivity extends Activity {
             public void onError(String error, JSONObject obj) {
                 String message=error;
                 try {
-                    if (obj.has("username"))
-                        message="Username : "+obj.getJSONArray("username").get(0).toString();
-                    else if (obj.has("email"))
-                        message="Email : "+obj.getJSONArray("email").get(0).toString();
-                    else if (obj.has("contact_number"))
-                        message="Contact no : "+obj.getJSONArray("contact_number").get(0).toString();
+                    if (obj!=null) {
+                        if (obj.has("username"))
+                            message = "Username : " + obj.getJSONArray("username").get(0).toString();
+                        else if (obj.has("email"))
+                            message = "Email : " + obj.getJSONArray("email").get(0).toString();
+                        else if (obj.has("contact_number"))
+                            message = "Contact no : " + obj.getJSONArray("contact_number").get(0).toString();
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }

@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ServerConnector {
     private static ServerConnector serverConnector;
-    public static final String SERVER_ADDRESS = "http://yvk.rxn.mybluehost.me:8001/api/";
+    public static final String SERVER_ADDRESS = "http://yvk.rxn.mybluehost.me:8000/api/";
     private static RequestQueue mRequestQueue;
     private SessionManager sessionManager;
     private Context context;
@@ -59,7 +59,6 @@ public class ServerConnector {
                     @Override
                     public void onResponse(String response) {
                         try {
-//                            JSONObject jsonResponse = new JSONObject(response);
                             onResponseListner.onResponse(response);
 
                         } catch (Exception e) {
@@ -110,7 +109,6 @@ public class ServerConnector {
                     @Override
                     public void onResponse(String response) {
                         try {
-//                            JSONObject jsonResponse = new JSONObject(response);
                             onResponseListner.onResponse(response);
 
                         } catch (Exception e) {
@@ -148,7 +146,6 @@ public class ServerConnector {
                     @Override
                     public void onResponse(String response) {
                         try {
-//                            JSONObject jsonResponse = new JSONObject(response);
                             onResponseListner.onResponse(response);
 
                         } catch (Exception e) {
@@ -167,7 +164,6 @@ public class ServerConnector {
             @Override
             public Map<String, String> getHeaders () {
                 Map<String, String> params = new HashMap<String, String>();
-                System.out.println(sessionManager.getToken());
                 if (sessionManager.getToken() != null) {
                     params.put("Authorization", "Token " + sessionManager.getToken());
                 }

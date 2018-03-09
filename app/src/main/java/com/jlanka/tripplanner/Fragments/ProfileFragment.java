@@ -82,7 +82,7 @@ public class ProfileFragment extends Fragment {
                              Bundle savedInstanceState) {
 
         myView = inflater.inflate(R.layout.content_profile_scrolling, container, false);
-        Stetho.initializeWithDefaults(getActivity());
+//        Stetho.initializeWithDefaults(getActivity());
         session = new SessionManager(getActivity());
         //This will redirect user to LoginActivity is he is not logged in
         // get user data from session

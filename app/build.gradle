@@ -8,11 +8,11 @@ android {
         applicationId "com.jlanka.tripplanner"
         minSdkVersion 18
         targetSdkVersion 26
-        versionName 'v1.02'
+        versionName 'v1.03'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
-        versionCode 2
+        versionCode 3
     }
     buildTypes {
         release {

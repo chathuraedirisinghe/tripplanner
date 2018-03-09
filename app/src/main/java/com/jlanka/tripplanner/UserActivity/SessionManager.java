@@ -201,8 +201,6 @@ public class SessionManager {
         editor.putString(user_mobile, mob);
     }
 
-
-
     /**
      * Quick check for login
      * **/

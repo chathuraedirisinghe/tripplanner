@@ -215,6 +215,7 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
         FragmentTransaction transaction;
         if (id == R.id.nav_home) {
+            vehicles=session.getVehicles();
             if(vehicles==null || vehicles.equals("[]")){
                 fragmentManager.beginTransaction().replace(R.id.content_frame, new VehicleFragment()).addToBackStack(VehicleFragment.class.getName()).commit();
             }else{
@@ -237,15 +238,17 @@ public class MainActivity extends AppCompatActivity
             new OnResponseListner() {
                 @Override
                 public void onResponse(String response) {
-            try{
-                    if(new JSONObject(response).getString("status").contains("successful")){
-                        session.logoutUser();
-                    }else{
-                        session.logoutUser();
+                    try{
+                        if(new JSONObject(response).getString("status").contains("successful")){
+                            session.logoutUser();
+                        }
+                        else{
+                            session.logoutUser();
+                        }
                     }
-                }catch(JSONException e){
-                    e.printStackTrace();
-                }
+                    catch(JSONException e){
+                        e.printStackTrace();
+                    }
                 }
             },
 

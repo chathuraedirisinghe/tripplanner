@@ -1701,7 +1701,7 @@ public class MapFragment extends Fragment implements
             }
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                System.out.println(databaseError);
+
             }
         });
     }

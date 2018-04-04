@@ -320,7 +320,7 @@ public class ProfileFragment extends Fragment {
                         System.out.println(error+","+obj);
                         Toast.makeText(getActivity(), error, Toast.LENGTH_SHORT).show();
                     }
-                },"SendVehicleData");
+                },"DeleteVehicle");
     }
 
     private void reloadSession(String id, final String password) {

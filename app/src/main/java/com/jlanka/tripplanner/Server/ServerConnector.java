@@ -42,7 +42,8 @@ public class ServerConnector {
 
     private ServerConnector(Context context){
         this.context=context;
-        mRequestQueue = Volley.newRequestQueue(context);
+        CustomHurlStack customHurlStack = new CustomHurlStack();
+        mRequestQueue = Volley.newRequestQueue(context,customHurlStack);
         sessionManager = new SessionManager(context);
     }
 
@@ -142,6 +143,42 @@ public class ServerConnector {
     }
 
     public synchronized void getRequest(String serverAddress,OnResponseListner onResponseListner,OnErrorListner onErrorListner,String tag) {
+        StringRequest postRequest = new StringRequest(Request.Method.GET, serverAddress,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            onResponseListner.onResponse(response);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Object[] array = prepareErrorMessage(error);
+                        onErrorListner.onError(array[0].toString(), (JSONObject) array[1]);
+                    }
+                }
+        ){
+            @Override
+            public Map<String, String> getHeaders () {
+                Map<String, String> params = new HashMap<String, String>();
+                if (sessionManager.getToken() != null) {
+                    params.put("Authorization", "Token " + sessionManager.getToken());
+                }
+                return params;
+            }
+        };
+        postRequest.setTag(tag);
+        postRequest.setRetryPolicy(new DefaultRetryPolicy((int) TimeUnit.SECONDS.toMillis(8),
+                0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        mRequestQueue.add(postRequest);
+    }
+
+    public synchronized void delete(String serverAddress,OnResponseListner onResponseListner,OnErrorListner onErrorListner,String tag) {
         StringRequest postRequest = new StringRequest(Request.Method.GET, serverAddress,
                 new Response.Listener<String>() {
                     @Override

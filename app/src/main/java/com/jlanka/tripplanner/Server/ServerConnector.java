@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ServerConnector {
     private static ServerConnector serverConnector;
-    public static final String SERVER_ADDRESS = "http://yvk.rxn.mybluehost.me:8000/api/";
+    public static final String SERVER_ADDRESS = "http://yvk.rxn.mybluehost.me:8001/api/";
     private static RequestQueue mRequestQueue;
     private SessionManager sessionManager;
     private Context context;

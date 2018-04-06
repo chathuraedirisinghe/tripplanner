@@ -13,22 +13,27 @@
         android:id="@+id/textView4"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Select Vehicle"
+        android:text="Plug-In charger"
         android:textSize="18sp" />
 
     <ImageView
         android:id="@+id/imageView2"
         android:layout_width="wrap_content"
         android:layout_height="195dp"
-        app:srcCompat="@drawable/select_vehicle" />
+        app:srcCompat="@drawable/plug_in" />
 
-    <TextView
+    <ProgressBar
+        android:id="@+id/progressBar2"
+        style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Please select the vehicle you wish to charge" />
+        android:indeterminateOnly="true"/>
 
-    <Spinner
-        android:id="@+id/vehicle_spinner"
+    <TextView
+        android:id="@+id/textView5"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:text="Please plug-in the charger"
+        android:layout_marginVertical="5dp"/>
+
 </LinearLayout>

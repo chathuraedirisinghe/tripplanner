@@ -3,7 +3,6 @@ package com.jlanka.tripplanner.Fragments;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Fragment;
-import android.app.FragmentManager;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -57,7 +56,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.maps.android.ui.IconGenerator;
 
@@ -97,9 +95,10 @@ import com.jlanka.tripplanner.Server.OnResponseListner;
 import com.jlanka.tripplanner.Server.ServerConnector;
 import com.jlanka.tripplanner.UI.ChargerDetailsDialog;
 import com.jlanka.tripplanner.UI.LegendDialog;
+import com.jlanka.tripplanner.UI.PlugInDialog;
 import com.jlanka.tripplanner.UI.ReceiptDialog;
 import com.jlanka.tripplanner.UI.RouteDialog;
-import com.jlanka.tripplanner.UI.StartChargingDialog;
+import com.jlanka.tripplanner.UI.SelectVehicleDialog;
 import com.jlanka.tripplanner.Helpers.UIHelper;
 import com.jlanka.tripplanner.UserActivity.SessionManager;
 
@@ -131,20 +130,17 @@ public class MapFragment extends Fragment implements
     private static Marker destinatonMarker;
     private HashMap<String,Charger>chargingStations;
 
-    public static Context currentContext;
-
     View mView;
     double currentLatitude,currentLongitude,mylatitude,mylongitude;
     LatLng latLng;
     private long chargingDuration;
     private boolean firstLoad = true;
-
     public static boolean isCharging=false,destinationSet=false;
     private AlertDialog ad;
 
 
     String user_mobile,user_pin;
-    HashMap<String, String> user;
+    HashMap<String, String> user,chargingSessions;
 
     View bottomSheet;
     BottomSheetBehavior behavior;
@@ -195,7 +191,6 @@ public class MapFragment extends Fragment implements
         mView=inflater.inflate(R.layout.fragment_map,container,false);
         ButterKnife.bind(this,mView);
 
-        currentContext = getActivity();
         container = (ViewGroup) getActivity().findViewById(R.id.cordinator_layout);
 
 
@@ -254,7 +249,6 @@ public class MapFragment extends Fragment implements
             @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
             @Override
             public void onClick(View view) {
-                addListener(1);
                 LegendDialog ld = new LegendDialog();
                 ld.show(getFragmentManager(),"Legend");
             }
@@ -365,7 +359,7 @@ public class MapFragment extends Fragment implements
     }
 
     private boolean checkLocationPermission() {
-        if (ContextCompat.checkSelfPermission(currentContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             permissionLayout.setVisibility(View.VISIBLE);
             return false;
         }
@@ -379,7 +373,7 @@ public class MapFragment extends Fragment implements
     @Override
     public boolean onMarkerClick(Marker marker) {
         selectedMarker = marker.getTitle();
-
+        zoomToLocation(marker.getPosition(),15,0);
         if (chargingStation!=null && isCharging && marker!=chargingStation){
             onMarkerClick(chargingStation);
             return true;
@@ -503,7 +497,6 @@ public class MapFragment extends Fragment implements
         double nextlatitude = mGoogleMap.getProjection().getVisibleRegion().latLngBounds.getCenter().latitude;
         double nextlongitude = mGoogleMap.getProjection().getVisibleRegion().latLngBounds.getCenter().longitude;
 
-
         Location my = new Location("point A");
 
         my.setLatitude(mylatitude);
@@ -516,9 +509,8 @@ public class MapFragment extends Fragment implements
 
         float distance = my.distanceTo(remote);
 
-
         if(distance>5000.0){
-            getResponse(nextlatitude,nextlongitude);
+            //getResponse(nextlatitude,nextlongitude);
         }else{
             //nothing
         }
@@ -566,7 +558,6 @@ public class MapFragment extends Fragment implements
                             }
 
                         } catch (JSONException e) {
-                            // TODO Auto-generated catch block
                             trackError(e);
                             e.printStackTrace();
                         }
@@ -594,9 +585,10 @@ public class MapFragment extends Fragment implements
             Marker chargerMarker = mGoogleMap.addMarker(c.getMarkerOptions());
             chargerMarker.setIcon(BitmapDescriptorFactory.fromBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState())));
             chargerMarker.setTag(c.getDevice_id());
-            startMqtt(c.getDevice_id());
+            addStatusListener(c.getDevice_id());
             markers.put(c.getDevice_id(),chargerMarker);
         }
+        addSessionListener();
     }
 
     private void updateBottomSheet(Charger c){
@@ -618,10 +610,6 @@ public class MapFragment extends Fragment implements
         else{
             _chargenow_btn.setEnabled(false);
             _chargenow_btn.setAlpha(0.75f);
-        }
-
-        if (isCharging) {
-            setCharging();
         }
 
         info_button.setOnClickListener(new View.OnClickListener() {
@@ -649,7 +637,7 @@ public class MapFragment extends Fragment implements
         _stop_charge.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stopCharge(charging_session_id);
+                stopCharge(c.getDevice_id());
             }
         });
     }
@@ -691,29 +679,29 @@ public class MapFragment extends Fragment implements
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
-    public void startMqtt(final String charger_id) {
-        MQTTHelper mqttHelper2 = new MQTTHelper(getActivity(),"tcp://development.enetlk.com:1887");
-        mqttHelper2.subscriptionTopic=("server/"+charger_id.toLowerCase()+"/status");
-        mqttHelper2.setCallback(new MqttCallbackExtended() {
-            @Override
-            public void connectComplete(boolean b, String s) {
-            }
-
-            @Override
-            public void connectionLost(Throwable throwable) {
-            }
-
-            @Override
-            public void messageArrived(String topic, MqttMessage mqttMessage) {
-                updateItemArray(charger_id,mqttMessage.toString());
-            }
-
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
-            }
-        });
-    }
+//    @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
+//    public void startMqtt(final String charger_id) {
+//        MQTTHelper mqttHelper2 = new MQTTHelper(getActivity(),"tcp://development.enetlk.com:1887");
+//        mqttHelper2.subscriptionTopic=("server/"+charger_id.toLowerCase()+"/status");
+//        mqttHelper2.setCallback(new MqttCallbackExtended() {
+//            @Override
+//            public void connectComplete(boolean b, String s) {
+//            }
+//
+//            @Override
+//            public void connectionLost(Throwable throwable) {
+//            }
+//
+//            @Override
+//            public void messageArrived(String topic, MqttMessage mqttMessage) {
+//                updateItemArray(charger_id,mqttMessage.toString());
+//            }
+//
+//            @Override
+//            public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+//            }
+//        });
+//    }
 
     private void updateItemArray(String charger_id, String charger_current_status){
         if (chargingStations!=null) {
@@ -724,17 +712,15 @@ public class MapFragment extends Fragment implements
 
                 if (m!=null) {
                     m.setIcon(BitmapDescriptorFactory.fromBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState())));
-                    chargerLoadingMessage.setVisibility(View.INVISIBLE);
+                    chargerLoadingMessage.setVisibility(View.GONE);
 
-                    if (selectedMarker.equals(c.getDevice_id())) {
+                    if (selectedMarker!=null && selectedMarker.equals(c.getDevice_id())) {
                         _charger_availability.setText(" " + c.getState());
                         _charger_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState()));
                         updateBottomSheet(c);
                     }
-                    return;
                 }
-            } else
-                return;
+            }
         }
     }
 
@@ -751,7 +737,7 @@ public class MapFragment extends Fragment implements
             @Override
             public void messageArrived(String topic, MqttMessage mqttMessage)  {
                 if(mqttMessage.toString().equals("charging")){
-                    setCharging();
+                    //setCharging();
                 }else if(mqttMessage.toString().contains("busy") || mqttMessage.toString().contains("Error!")){
                     notifyOnError(mqttMessage.toString().replace("Error! ",""));
                 }else if(mqttMessage.toString().equals("not charging")){
@@ -799,7 +785,6 @@ public class MapFragment extends Fragment implements
             progressDialog.dismiss();
         }
 
-//        session.user_charging_station(null);
         _chargenow_btn.setEnabled(true);
         _chargenow_btn.setAlpha(1f);
         _imageView.setVisibility(View.GONE);
@@ -807,9 +792,6 @@ public class MapFragment extends Fragment implements
         _chargenow_btn.setVisibility(View.VISIBLE);
         _get_direction.setVisibility(View.VISIBLE);
         _stop_charge.setVisibility(View.GONE);
-
-        fsv.setEnabled(true);
-        mGoogleMap.getUiSettings().setAllGesturesEnabled(true);
     }
 
     private void notifyOnError(String s) {
@@ -840,98 +822,91 @@ public class MapFragment extends Fragment implements
             progressDialog.dismiss();
         }
 
-        //_charging_station.setText(user.get(SessionManager.user_chargingStation));
         _chargenow_btn.setVisibility(View.GONE);
         _get_direction.setVisibility(View.GONE);
         _stop_charge.setVisibility(View.VISIBLE);
-
-        fsv.setEnabled(false);
-        mGoogleMap.getUiSettings().setAllGesturesEnabled(false);
     }
 
     public void chargeNow(String selectedMarker) {
-        StartChargingDialog scd = new StartChargingDialog();
-        scd.init(selectedMarker,session.getVehicles(), new DialogInterface.OnClickListener() {
+        showProgress("Charger Initialising");
+        SelectVehicleDialog scd = new SelectVehicleDialog();
+        scd.init(selectedMarker, session.getVehicles(), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                if (!scd.getSelectedVID().equals(""))
-                    startCharging(selectedMarker,scd.getSelectedVID());
+                if (!scd.getSelectedVID().equals("")) {
+                    //startCharging(selectedMarker, scd.getSelectedVID());
+
+                    Map<String, String> params = new HashMap<>();
+                    // the POST parameters:
+                    params.put("charging_station_id", selectedMarker);
+                    params.put("electric_vehicle_id", scd.getSelectedVID());
+
+
+                    ServerConnector.getInstance(getActivity()).cancelRequest("Initialise_Charger");
+                    ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS + "charging_stations/init_charge/", params, Request.Method.POST,
+                        new OnResponseListner() {
+                            @RequiresApi(api = Build.VERSION_CODES.M)
+                            @Override
+                            public void onResponse(String response) {
+                                try {
+                                    hideProgress();
+                                    String status = new JSONObject(response).getString("status");
+
+                                    switch (status){
+                                        case "Charging Initialized":
+                                            if (chargingSessions==null)
+                                                chargingSessions=new HashMap();
+
+                                            chargingSessions.put(selectedMarker,scd.getSelectedVID());
+                                            addSessionListener();
+                                            break;
+                                        default:
+                                            showDialog(status,"Please try again later","chargerNow",new Object[]{selectedMarker},false);
+                                            break;
+                                    }
+                                } catch (Exception e) {
+                                    System.out.println(e.getMessage());
+                                }
+                            }
+                        },
+                        new OnErrorListner() {
+                            @RequiresApi(api = Build.VERSION_CODES.M)
+                            @Override
+                            public void onError(String error, JSONObject obj) {
+                                showDialog(error,"Please try again later","chargeNow",new Object[]{selectedMarker},false);
+                            }
+                        }, "Initialise_Charger");
+                }
                 else {
                     collapseBottomSheet();
                     Toast.makeText(getActivity(), "No vehicles found, please add a vehicle !", Toast.LENGTH_LONG).show();
                 }
             }
         });
-        scd.show(getFragmentManager(),"Route");
+        scd.show(getFragmentManager(), "Select_Vehicle_Dialog");
     }
 
-    public void startCharging(String selectedMarker,String vehicle_id){
-        showProgress("Starting Charging Session");
-        charging_marker = selectedMarker;
-        session.user_charging_station(charging_marker);
+    public void stopCharge(String station_id){
+        showProgress("Ending charging session");
 
-        Handler h=new Handler();
-        h.postDelayed(new Runnable() {
-            @RequiresApi(api = Build.VERSION_CODES.M)
-            @Override
-            public void run() {
-                if (isCharging!=true && progressBar.getVisibility()==View.VISIBLE) {
+        Map<String, String> params = new HashMap<>();
+        params.put("charging_station_id", station_id);
+        params.put("electric_vehicle_id", chargingSessions.get(station_id));
+
+        ServerConnector.getInstance(getActivity()).cancelRequest("Stop_Charger");
+        ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS + "charging_stations/stop_charge/", params, Request.Method.POST,
+            new OnResponseListner() {
+                @Override
+                public void onResponse(String response) {
                     hideProgress();
-                    showDialog("Connection Error", "Station server connection timeout!", "chargeNow", new Object[]{selectedMarker,vehicle_id}, false);
                 }
-            }
-        },10000);
-
-        JSONObject payload = new JSONObject();
-        try {
-            payload.put("cusid",user_mobile);
-            payload.put("bysms", 0);
-            payload.put("message", "ev chg "+ charging_marker +" "+user_pin+" "+vehicle_id);
-            chargingDuration=System.currentTimeMillis();
-            GoogleAnalyticsService.getInstance().setAction("Charging","Starting Charging Session",selectedMarker);
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            trackError(e);
-            e.printStackTrace();
-
-        }
-
-        MQTTPublisher mqttPublisher = new MQTTPublisher(getActivity(),"tcp://development.enetlk.com:1883");
-        mqttPublisher.publishToTopic(payload.toString(),getActivity());
-    }
-
-    public void stopCharge(String session_id){
-        showProgress("Stopping");
-
-        Handler h=new Handler();
-        h.postDelayed(new Runnable() {
-            @RequiresApi(api = Build.VERSION_CODES.M)
-            @Override
-            public void run() {
-                if (isCharging==true && progressBar.getVisibility()==View.VISIBLE) {
+            },
+            new OnErrorListner() {
+                @Override
+                public void onError(String error, JSONObject obj) {
                     hideProgress();
-                    showDialog("Connection Error", "Station server connection timeout!", "stopCharge", null, false);
                 }
-            }
-        },5000);
-
-        JSONObject payload = new JSONObject();
-        try {
-            payload.put("cusid",user_mobile);
-            payload.put("bysms", 0);
-            payload.put("message", "ev stop "+ charging_marker +" "+user_pin+" "+session_id);
-            chargingDuration=System.currentTimeMillis()-chargingDuration;
-            double hours = (chargingDuration / (1000*60*60)) % 24;
-            GoogleAnalyticsService.getInstance().setAction("Charging","Duration",hours+"");
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            trackError(e);
-            e.printStackTrace();
-
-        }
-        MQTTPublisher mqttPublisher = new MQTTPublisher(getActivity(),"tcp://development.enetlk.com:1883");
-        mqttPublisher.publishToTopic(payload.toString(),getActivity());
-        collapseBottomSheet();
+            },"Stop_Charger");
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1004,6 +979,9 @@ public class MapFragment extends Fragment implements
                                     break;
                                 case "getChargerInfoWindow":
                                     getChargerInfoWindow((Charger) passedQuery[0]);
+                                    break;
+                                case "chargeNow":
+                                    chargeNow(passedQuery[0].toString());
                                     break;
                             }
                         }
@@ -1093,7 +1071,6 @@ public class MapFragment extends Fragment implements
                                 fsv.hideProgress();
                                 fsv.swapSuggestions(resultList);
                             } catch (JSONException e) {
-                                // TODO Auto-generated catch block
                                 fsv.hideProgress();
                                 showDialog("Timeout", "Check Your internet connection...", "getAddressSuggestions", new Object[]{query}, false);
                                 e.printStackTrace();
@@ -1163,7 +1140,6 @@ public class MapFragment extends Fragment implements
                             }
                             hideProgress();
                         } catch (JSONException e) {
-                            // TODO Auto-generated catch block
                             hideProgress();
                             e.printStackTrace();
                         }
@@ -1433,7 +1409,6 @@ public class MapFragment extends Fragment implements
                                 fabRoute.hide();
                                 hideProgress();
                             } catch (Exception e) {
-                                // TODO Auto-generated catch block
                                 hideProgress();
                                 e.printStackTrace();
                             }
@@ -1516,7 +1491,6 @@ public class MapFragment extends Fragment implements
                                 }
                                 hideProgress();
                             } catch (JSONException e) {
-                                // TODO Auto-generated catch block
                                 hideProgress();
                                 showDialog("Timeout", "Check Your internet connection...", "setDestinationOnClick", new Object[]{location}, false);
                                 e.printStackTrace();
@@ -1690,14 +1664,74 @@ public class MapFragment extends Fragment implements
         }
     }
 
-    private void addListener(int id){
+    private void addSessionListener(){
+        hideProgress();
+        PlugInDialog pid = new PlugInDialog();
         DatabaseReference database = FirebaseDatabase.getInstance().getReference();
-        DatabaseReference myRef = database.child("ChargingSession").child(id+"");
+        DatabaseReference sessionRef = database.child("charging_sessions").child(session.getUserID());
 
-        myRef.addValueEventListener(new ValueEventListener() {
+        sessionRef.addValueEventListener(new ValueEventListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            @SuppressLint("MissingPermission")
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                updateItemArray(dataSnapshot.getKey(),dataSnapshot.getValue().toString());
+                System.out.println(dataSnapshot);
+                if (dataSnapshot.getValue()!=null) {
+                    try {
+                        HashMap<String, JSONObject> vehicles=new HashMap();
+                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                            vehicles.put(ds.getKey(),new JSONObject(ds.getValue().toString()));
+                        }
+                        JSONObject vehicle = vehicles.get(vehicles.keySet().toArray()[0]);
+                        switch (vehicle.getString("status")){
+                            case "PluggedIn":
+                                if(pid!=null && pid.isAdded())
+                                    pid.dismiss();
+
+                                showProgress("Charger turning on");
+                                break;
+                            case "Charging":
+                                onMarkerClick(markers.get(vehicle.getString("station")));
+                                hideProgress();
+                                setCharging();
+                                break;
+                            case "Charging_Stopped":
+                                setFree();
+                                sessionRef.child(vehicles.keySet().toArray()[0].toString()).removeValue();
+                                generateReceipt(vehicle.getString("session"));
+                                break;
+                            case "Charging_Failed":
+                                setFree();
+                                sessionRef.child(vehicles.keySet().toArray()[0].toString()).removeValue();
+                                showDialog("Charging Failed","Please try again later","chargeNow",
+                                        new Object[]{vehicle.getString("station")},false);
+                            default:
+                                if(pid!=null && !pid.isAdded())
+                                    pid.show(getFragmentManager(), "Plug_In_Dialog");
+
+                                setFree();
+                                break;
+                        }
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    private void addStatusListener(String id){
+        DatabaseReference database = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference chargerStateRef = database.child("charging_stations").child(id);
+        chargerStateRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.getValue()!=null)
+                    updateItemArray(dataSnapshot.getKey(),dataSnapshot.getValue().toString());
             }
             @Override
             public void onCancelled(DatabaseError databaseError) {

@@ -21,7 +21,7 @@ import java.util.ArrayList;
  * Created by Workstation on 2/24/2018.
  */
 
-public class StartChargingDialog extends DialogFragment {
+public class SelectVehicleDialog extends DialogFragment {
 
     private String selectedMarker,vehicles;
     private DialogInterface.OnClickListener positiveButtonListener;

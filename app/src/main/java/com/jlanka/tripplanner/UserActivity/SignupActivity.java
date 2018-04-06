@@ -188,8 +188,6 @@ public class SignupActivity extends Activity {
         String email = _emailText.getText().toString();
         String password = _passwordText.getText().toString();
 
-        // TODO: Send Server Request-->
-
         getServerRequest(username,fname,lname,mobile,email,password);
 
         new android.os.Handler().postDelayed(

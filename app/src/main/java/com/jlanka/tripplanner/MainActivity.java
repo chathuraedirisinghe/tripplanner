@@ -71,36 +71,36 @@ public class MainActivity extends AppCompatActivity
         Stetho.initializeWithDefaults(this);
         checkLocationPermission();
 
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread t, Throwable e) {
-                if (isExternalStorageWritable()) {
-                    File appDirectory = new File(Environment.getExternalStorageDirectory() + "/JL Trip Planner");
-                    File logDirectory = new File(appDirectory + "/log");
-                    File logFile = new File(logDirectory, "logcat" + System.currentTimeMillis() + ".txt");
-                    // create app folder
-                    if (!appDirectory.exists()) {
-                        appDirectory.mkdir();
-                    }
-                    // create log folder
-                    if (!logDirectory.exists()) {
-                        logDirectory.mkdir();
-                    }
-                    // clear the previous logcat and then write the new one to the file
-                    try {
-                        Process process = Runtime.getRuntime().exec("logcat -c");
-                        process = Runtime.getRuntime().exec("logcat -f " + logFile + " *:S MyActivity:D MyActivity2:D");
-                    } catch (IOException ioe) {
-                        ioe.printStackTrace();
-                    }
-
-                } else if (isExternalStorageReadable()) {
-                    // only readable
-                } else {
-                    // not accessible
-                }
-            }
-        });
+//        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+//            @Override
+//            public void uncaughtException(Thread t, Throwable e) {
+//                if (isExternalStorageWritable()) {
+//                    File appDirectory = new File(Environment.getExternalStorageDirectory() + "/JL Trip Planner");
+//                    File logDirectory = new File(appDirectory + "/log");
+//                    File logFile = new File(logDirectory, "logcat" + System.currentTimeMillis() + ".txt");
+//                    // create app folder
+//                    if (!appDirectory.exists()) {
+//                        appDirectory.mkdir();
+//                    }
+//                    // create log folder
+//                    if (!logDirectory.exists()) {
+//                        logDirectory.mkdir();
+//                    }
+//                    // clear the previous logcat and then write the new one to the file
+//                    try {
+//                        Process process = Runtime.getRuntime().exec("logcat -c");
+//                        process = Runtime.getRuntime().exec("logcat -f " + logFile + " *:S MyActivity:D MyActivity2:D");
+//                    } catch (IOException ioe) {
+//                        ioe.printStackTrace();
+//                    }
+//
+//                } else if (isExternalStorageReadable()) {
+//                    // only readable
+//                } else {
+//                    // not accessible
+//                }
+//            }
+//        });
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             // only for gingerbread and newer versions
@@ -385,7 +385,6 @@ public class MainActivity extends AppCompatActivity
             dialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                    // TODO Auto-generated method stub
                     Intent myIntent = new Intent( Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                     startActivity(myIntent);
                     //get gps

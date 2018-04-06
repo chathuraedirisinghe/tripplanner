@@ -1,27 +1,35 @@
 {
   "project_info": {
-    "project_number": "456405268719",
-    "firebase_url": "https://jl-trip-planner.firebaseio.com",
-    "project_id": "jl-trip-planner",
-    "storage_bucket": "jl-trip-planner.appspot.com"
+    "project_number": "741002652600",
+    "firebase_url": "https://ev-chargingstations.firebaseio.com",
+    "project_id": "ev-chargingstations",
+    "storage_bucket": "ev-chargingstations.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:456405268719:android:de3953ef3d16b10b",
+        "mobilesdk_app_id": "1:741002652600:android:de3953ef3d16b10b",
         "android_client_info": {
           "package_name": "com.jlanka.tripplanner"
         }
       },
       "oauth_client": [
         {
-          "client_id": "456405268719-6u3c1sb7ae5i8721gofbcjsgpfond4h3.apps.googleusercontent.com",
+          "client_id": "741002652600-2ir1f1a9ha9iaerpn7l6uflpmskcugub.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jlanka.tripplanner",
+            "certificate_hash": "94e24e5d3dcc3da109d1a14cbfa053fbb850a7c0"
+          }
+        },
+        {
+          "client_id": "741002652600-3m34j40s1qsjukcot9tddp74ppral1dg.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyB0v7WkRSfnPkScz4jYvo8_xoiDcGyNIn4"
+          "current_key": "AIzaSyBa3i0KEtMrKZoM7E31M14LXwRjwwJ5Fes"
         }
       ],
       "services": {
@@ -29,8 +37,13 @@
           "status": 1
         },
         "appinvite_service": {
-          "status": 1,
-          "other_platform_oauth_client": []
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "741002652600-3m34j40s1qsjukcot9tddp74ppral1dg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         },
         "ads_service": {
           "status": 2

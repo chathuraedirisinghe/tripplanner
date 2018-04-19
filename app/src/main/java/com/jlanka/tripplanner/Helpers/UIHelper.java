@@ -33,14 +33,14 @@ public class UIHelper {
                 case "Available":
                     image=(resizeMapIcons("l2a",100,120));
                     break;
-                case "Busy":
-                    image=(resizeMapIcons("l2b",100,120));
-                    break;
                 case "NA":
                     image=(resizeMapIcons("l2u",100,120));
                     break;
                 case "Pending...":
                     image=(resizeMapIcons("l2u",100,120));
+                    break;
+                default:
+                    image=(resizeMapIcons("l2b",100,120));
                     break;
             }
         }
@@ -49,14 +49,14 @@ public class UIHelper {
                 case "Available":
                     image=(resizeMapIcons("dcfa",100,120));
                     break;
-                case "Busy":
-                    image=(resizeMapIcons("dcfb",100,120));
-                    break;
                 case "NA":
                     image=(resizeMapIcons("dcfu",100,120));
                     break;
                 case "Pending...":
                     image=(resizeMapIcons("dcfu",100,120));
+                    break;
+                default:
+                    image=(resizeMapIcons("dcfb",100,120));
                     break;
             }
         }

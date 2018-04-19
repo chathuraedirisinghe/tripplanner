@@ -128,7 +128,7 @@ public class HistoryFragment extends Fragment {
                         tr.setBackgroundColor(Color.rgb(207, 211, 214));
                     }
 
-                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ");
                     Date startDate = simpleDateFormat.parse(history_row.getString("start_datetime"));
                     SimpleDateFormat dateFormat=new SimpleDateFormat("dd MMM - hh:mm a");
 
@@ -140,17 +140,29 @@ public class HistoryFragment extends Fragment {
                     c2.setTextSize(12);
                     c2.setPadding(0,0,5,0);
                     c2.setGravity(Gravity.RIGHT);
+
                     if (duration > 59) {
-                        int hours = duration / 60; //since both are ints, you get an int
-                        int minutes = duration % 60;
+                        int minutes = duration / 60;
+                        int sec = duration % 60;
+                        int hours = minutes / 60;
+
+                        String durationString="";
 
                         if (hours > 1)
-                            c2.setText(hours + " hrs " + minutes + " mins");
+                            durationString+=hours + " hrs ";
                         else
-                            c2.setText(hours + " hr " + minutes + " mins");
-                    } else
-                        c2.setText(duration + " mins");
+                            durationString+=hours + " hr ";
 
+                        if (minutes>1)
+                            durationString+=minutes+" mins ";
+                        else
+                            durationString+=minutes+" min ";
+
+                        durationString+=sec+" secs";
+
+                        c2.setText(durationString);
+                    } else
+                        c2.setText(duration + " secs");
 
                     TextView c3 = new TextView(getActivity());
                     c3.setText(Math.round(cost)+"    ");

@@ -209,17 +209,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="6dp"
-            android:visibility="visible">
+            android:visibility="gone">
 
             <Button
                 android:id="@+id/stop_now_btn"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginLeft="6dp"
+                android:layout_marginRight="6dp"
                 android:layout_weight="1"
                 android:background="#FF0000"
                 android:text="Stop"
-                android:textColor="#FFFFFF"
-                android:visibility="gone" />
+                android:visibility="visible" />
+
 
         </LinearLayout>
     </LinearLayout>

@@ -6,7 +6,10 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.util.Log;
 import android.util.Patterns;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -37,6 +40,17 @@ import com.facebook.ProfileTracker;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
+import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInApi;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.SignInButton;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.tasks.Task;
 import com.jlanka.tripplanner.R;
 
 import com.jlanka.tripplanner.GoogleAnalyticsService;
@@ -46,7 +60,9 @@ import com.jlanka.tripplanner.Server.ServerConnector;
 
 public class SignupActivity extends Activity {
     private static final String TAG = "SignupActivity";
-    private LoginButton loginButton;
+    private static final int FacebookLoginCode=1;
+    private static final int GooogleSignInCode=2;
+    private GoogleSignInClient mGoogleSignInClient;
     private CallbackManager callbackManager;
     private ProfileTracker mProfileTracker;
     @BindView(R.id.sign_form) LinearLayout form;
@@ -58,6 +74,8 @@ public class SignupActivity extends Activity {
     @BindView(R.id.input_mobile) EditText _mobileText;
     @BindView(R.id.input_password) EditText _passwordText;
     @BindView(R.id.btn_signup) Button _signupButton;
+    @BindView(R.id.google_login) SignInButton signInButton;
+    @BindView(R.id.facebook_login) LoginButton facebook_login;
     @BindView(R.id.signup_manual) Button manualSignup;
     @BindView(R.id.link_login) TextView _loginLink;
 
@@ -83,13 +101,62 @@ public class SignupActivity extends Activity {
             }
         });
 
-        loginButton = (LoginButton) findViewById(R.id.login_button);
-        loginButton.setReadPermissions(Arrays.asList(
-                 "email","public_profile"));
+        setUpFacebookButton();
+        setUpGoogleButton();
+        manualSignup.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                buttonsLayout.setVisibility(View.GONE);
+                form.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    public void setUpGoogleButton(){
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        TextView textView = (TextView) signInButton.getChildAt(0);
+        textView.setText("Signup with Google");
+        textView.setTextSize(13);
+        signInButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+                startActivityForResult(signInIntent, GooogleSignInCode);
+            }
+        });
+    }
+
+    private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
+        try {
+            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
+                _emailText.setText(account.getEmail());
+                _username.setText(account.getDisplayName());
+                _fname.setText(account.getGivenName());
+                _lname.setText(account.getFamilyName());
+                buttonsLayout.setVisibility(View.GONE);
+                form.setVisibility(View.VISIBLE);
+                mGoogleSignInClient.signOut();
+
+        } catch (ApiException e) {
+            // The ApiException status code indicates the detailed failure reason.
+            // Please refer to the GoogleSignInStatusCodes class reference for more information.
+            Log.w(TAG, "signInResult:failed code=" + e.getStatusCode());
+            //updateUI(null);
+        }
+    }
+
+    public void setUpFacebookButton(){
+        facebook_login.setReadPermissions(Arrays.asList(
+                "email","public_profile"));
         callbackManager = CallbackManager.Factory.create();
 
         // Callback registration
-        loginButton.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
+        facebook_login.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
             @Override
             public void onSuccess(LoginResult loginResult) {
                 AccessToken accessToken = loginResult.getAccessToken();
@@ -118,10 +185,8 @@ public class SignupActivity extends Activity {
                                     buttonsLayout.setVisibility(View.GONE);
                                     form.setVisibility(View.VISIBLE);
                                     LoginManager.getInstance().logOut();
-                                    //Toast.makeText(getApplicationContext(), "Name " + Name, Toast.LENGTH_LONG).show();
-
-
-                                } catch (JSONException e) {
+                                }
+                                catch (JSONException e) {
                                     e.printStackTrace();
                                 }
                             }
@@ -158,14 +223,6 @@ public class SignupActivity extends Activity {
                 // Fetch user details from New Profile
             }
         };
-
-        manualSignup.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                buttonsLayout.setVisibility(View.GONE);
-                form.setVisibility(View.VISIBLE);
-            }
-        });
     }
 
     public void signup() {
@@ -412,7 +469,16 @@ public class SignupActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        callbackManager.onActivityResult(requestCode, resultCode, data);
+        System.out.println(requestCode);
+        switch (requestCode){
+            case FacebookLoginCode:
+                callbackManager.onActivityResult(requestCode, resultCode, data);
+                break;
+            case GooogleSignInCode:
+                Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+                handleSignInResult(task);
+                break;
+        }
         super.onActivityResult(requestCode, resultCode, data);
     }
 

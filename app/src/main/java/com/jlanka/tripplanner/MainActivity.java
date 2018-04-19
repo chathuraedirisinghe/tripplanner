@@ -24,6 +24,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.android.volley.Request;
@@ -136,7 +137,14 @@ public class MainActivity extends AppCompatActivity
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close){
+
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+                setCredit();
+            }
+        };
+
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
@@ -212,7 +220,6 @@ public class MainActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
-        FragmentTransaction transaction;
         if (id == R.id.nav_home) {
             checkVehicles();
         } else if (id == R.id.nav_history) {
@@ -312,10 +319,14 @@ public class MainActivity extends AppCompatActivity
         if(vehicles==null || vehicles.equals("[]")){
             fragmentManager.beginTransaction().replace(R.id.content_frame, new VehicleFragment()).commit();
         }else{
-            if (mContent==null)
-                mContent=new MapFragment();
+            if (mContent==null) {
+                mContent = new MapFragment();
+            }
 
-            fragmentManager.beginTransaction().replace(R.id.content_frame,mContent).commit();
+            if (fragmentManager.getBackStackEntryCount()<1)
+                fragmentManager.beginTransaction().replace(R.id.content_frame,mContent).commit();
+            else
+                fragmentManager.beginTransaction().replace(R.id.content_frame,mContent).addToBackStack(MapFragment.class.getName()).commit();
         }
     }
 
@@ -392,5 +403,39 @@ public class MainActivity extends AppCompatActivity
             });
             dialog.show();
         }
+    }
+
+    private void setCredit(){
+        String id = session.getUserID();
+        ProgressBar pb = findViewById(R.id.nav_credit_progress);
+        pb.setVisibility(View.VISIBLE);
+
+        ServerConnector.getInstance(this).cancelRequest("GetUserCredit");
+        ServerConnector.getInstance(this).getRequest(ServerConnector.SERVER_ADDRESS + "ev_owners/" + id + "/",
+                new OnResponseListner() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            String credit = new JSONObject(response).getString("balance");
+                            setUser_credit(credit);
+                            session.setUser_credit(credit);
+                            pb.setVisibility(View.INVISIBLE);
+                        }
+                        catch (Exception e){
+                            pb.setVisibility(View.INVISIBLE);
+                            System.out.println(e.getMessage());
+                        }
+
+                    }
+                },
+                new OnErrorListner() {
+                    @Override
+                    public void onError(String error, JSONObject obj) {
+                        pb.setVisibility(View.INVISIBLE);
+                        System.out.println(error+obj);
+                    }
+                },
+                "GetUserCredit"
+        );
     }
 }

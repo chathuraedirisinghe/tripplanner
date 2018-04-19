@@ -185,7 +185,7 @@
                 android:layout_height="wrap_content"
                 android:includeFontPadding="false"
                 android:paddingHorizontal="10dp"
-                android:text="EH 23 JE - Lexus " />
+                android:text="" />
         </LinearLayout>
 
         <LinearLayout

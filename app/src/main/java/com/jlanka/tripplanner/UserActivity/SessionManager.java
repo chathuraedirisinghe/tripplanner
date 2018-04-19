@@ -97,21 +97,6 @@ public class SessionManager {
         editor.putString(user_id, userid);
         editor.commit();
     }
-//    public void createProfileData(String credit, String fname, String lname, String title, String occupation, String email, String nic, String altmobno, String birthday, String address, String cartype){
-//
-//        editor.putString(user_credit, credit);
-//        editor.putString(user_fname, fname);
-//        editor.putString(user_lname, lname);
-//        editor.putString(user_title, title);
-//        editor.putString(user_occupation, occupation);
-//        editor.putString(user_email, email);
-//        editor.putString(user_nic, nic);
-//        editor.putString(user_altmobno, altmobno);
-//        editor.putString(user_birthday, birthday);
-//        editor.putString(user_address, address);
-//        editor.putString(user_cartype, cartype);
-//        editor.commit();
-//    }
 
     public void user_charging_station(String selectedStation){
         editor.putString(user_chargingStation,selectedStation);
@@ -200,6 +185,8 @@ public class SessionManager {
     public void setMobile(String mob){
         editor.putString(user_mobile, mob);
     }
+
+    public void setUser_credit(String credit){editor.putString(user_credit, credit);}
 
     /**
      * Quick check for login

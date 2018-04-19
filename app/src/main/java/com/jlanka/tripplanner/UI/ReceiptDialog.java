@@ -106,10 +106,9 @@ public class ReceiptDialog extends DialogFragment {
                 @RequiresApi(api = Build.VERSION_CODES.M)
                 @Override
                 public void onResponse(String response) {
+                    System.out.println("response"+response);
                     try {
-                        if (response.equals("[]")) {
-                        }
-                        else {
+                        if (!response.equals("[]")) {
                             LinearLayout detailsLayout = view.findViewById(R.id.rec_details_layout);
                             LinearLayout progressLayout = view.findViewById(R.id.rec_progress_layout);
                             TextView ch_id = view.findViewById(R.id.rec_charger_id);
@@ -125,56 +124,66 @@ public class ReceiptDialog extends DialogFragment {
 
                             JSONObject obj=new JSONObject(response);
 
-                            if (obj.getString("status").equals("DO")) {
-                                JSONArray vehicles = new JSONArray(vehiclesString);
-                                for (int i = 0; i < vehicles.length(); i++) {
-                                    JSONObject v = vehicles.getJSONObject(i);
-                                    if (v.getString("id").equals(obj.getString("electric_vehicle"))) {
-                                        rec_veh.setText(v.getString("reg_no") + " - " + v.getString("model"));
-                                    }
+                            JSONArray vehicles = new JSONArray(vehiclesString);
+                            for (int i = 0; i < vehicles.length(); i++) {
+                                JSONObject v = vehicles.getJSONObject(i);
+                                if (v.getString("id").equals(obj.getString("electric_vehicle"))) {
+                                    rec_veh.setText(v.getString("reg_no") + " - " + v.getString("model"));
                                 }
-
-                                ch_id.setText(charger.getDevice_id());
-                                ch_type.setText(charger.getType());
-                                ch_power.setText(charger.getPower() + " kW");
-                                rec_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(charger.getType(), charger.getState()));
-
-                                rec_total.setText("Rs."+Math.round(obj.getDouble("cost")));
-
-                                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-                                Date startDate = simpleDateFormat.parse(obj.getString("start_datetime"));
-
-                                SimpleDateFormat dateFormat=new SimpleDateFormat("dd-MM-yyyy");
-                                SimpleDateFormat timeFormat=new SimpleDateFormat("hh:mm:ss");
-
-                                rec_date.setText(dateFormat.format(startDate));
-                                rec_start.setText(timeFormat.format(startDate));
-
-                                Date stopDate = simpleDateFormat.parse(obj.getString("end_datetime"));
-
-                                rec_stop.setText(timeFormat.format(stopDate));
-
-                                int dur = obj.getInt("duration");
-                                if (dur > 59) {
-                                    int hours = dur / 60; //since both are ints, you get an int
-                                    int minutes = dur % 60;
-
-                                    if (hours > 1)
-                                        rec_dur.setText(hours + " hrs " + minutes + " mins");
-                                    else
-                                        rec_dur.setText(hours + " hr " + minutes + " mins");
-                                } else
-                                    rec_dur.setText(dur + " mins");
-                                progressLayout.setVisibility(View.GONE);
-                                detailsLayout.setVisibility(View.VISIBLE);
-                                dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setEnabled(true);
-                                dialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
                             }
+
+                            ch_id.setText(charger.getDevice_id());
+                            ch_type.setText(charger.getType());
+                            ch_power.setText(charger.getPower() + " kW");
+                            rec_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(charger.getType(), charger.getState()));
+
+                            rec_total.setText("Rs."+Math.round(obj.getDouble("cost")));
+
+                            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ");
+                            Date startDate = simpleDateFormat.parse(obj.getString("start_datetime"));
+
+                            SimpleDateFormat dateFormat=new SimpleDateFormat("dd-MM-yyyy");
+                            SimpleDateFormat timeFormat=new SimpleDateFormat("hh:mm:ss");
+
+                            rec_date.setText(dateFormat.format(startDate));
+                            rec_start.setText(timeFormat.format(startDate));
+
+                            Date stopDate = simpleDateFormat.parse(obj.getString("end_datetime"));
+
+                            rec_stop.setText(timeFormat.format(stopDate));
+
+                            int dur = obj.getInt("duration");
+                            if (dur > 59) {
+                                int minutes = dur / 60;
+                                int sec = dur % 60;
+                                int hours = minutes / 60;
+
+                                String durationString="";
+
+                                if (hours > 1)
+                                    durationString+=hours + " hrs ";
+                                else
+                                    durationString+=hours + " hr ";
+
+                                if (minutes>1)
+                                    durationString+=minutes+" mins ";
+                                else
+                                    durationString+=minutes+" min ";
+
+                                durationString+=sec+" secs";
+
+                                rec_dur.setText(durationString);
+                            } else
+                                rec_dur.setText(dur + " secs");
+
+                            progressLayout.setVisibility(View.GONE);
+                            detailsLayout.setVisibility(View.VISIBLE);
+                            dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setEnabled(true);
+                            dialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
                         }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    } catch (ParseException e) {
-                        e.printStackTrace();
+                    }
+                    catch (Exception e) {
+                        System.out.println(e.getMessage());
                     }
                 }
             },

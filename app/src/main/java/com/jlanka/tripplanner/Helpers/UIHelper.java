@@ -3,6 +3,7 @@ package com.jlanka.tripplanner.Helpers;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -83,5 +84,53 @@ public class UIHelper {
                         .getDisplayMetrics());
 
         return marginInDp;
+    }
+
+    public int pxToDp(int px) {
+        DisplayMetrics displayMetrics = c.getResources().getDisplayMetrics();
+        int dp = Math.round(px / (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
+        return dp;
+    }
+
+    public String getDuration(int duration){
+        String durationString="";
+        if (duration > 59) {
+            int minutes = duration / 60;
+            int sec = duration % 60;
+            int hours = minutes / 60;
+
+            if (hours > 1)
+                durationString+=hours + " hrs ";
+            else if (hours>0)
+                durationString+=hours + " hr ";
+
+            if (minutes>1)
+                durationString+=minutes+" mins ";
+            else
+                durationString+=minutes+" min ";
+
+            durationString+=sec+" secs";
+        } else
+            durationString=duration + " secs";
+
+        return durationString;
+    }
+
+    public String getDurationInTimeFormat(int duration){
+        String durationString="";
+        if (duration > 59) {
+            int minutes = duration / 60;
+            int sec = duration % 60;
+            int hours = minutes / 60;
+
+            durationString+=String.format("%02d", hours) + " : ";
+
+            durationString+=String.format("%02d", minutes) + " : ";
+
+            durationString+=String.format("%02d", sec);
+        } else
+            durationString+="00 : 00 : "+String.format("%02d", duration);
+
+        return durationString;
     }
 }

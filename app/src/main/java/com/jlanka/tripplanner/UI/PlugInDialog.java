@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.Toast;
@@ -24,19 +25,10 @@ import java.util.ArrayList;
 
 public class PlugInDialog extends DialogFragment {
 
-    private String selectedMarker,vehicles;
-    private ArrayList<String> vIds=new ArrayList<>();
-
     @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        super.onCreateDialog(savedInstanceState);
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(getActivity());
-        LayoutInflater inflater = getActivity().getLayoutInflater();
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.dialog_plug_in, null);
-        builder.setView(view);
-        android.app.AlertDialog dialog = builder.create();
-        dialog.setCancelable(false);
-        dialog.show();
-        return dialog;
+        setCancelable(false);
+        return view;
     }
 }

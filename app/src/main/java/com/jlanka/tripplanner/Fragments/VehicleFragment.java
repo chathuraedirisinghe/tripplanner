@@ -103,7 +103,7 @@ public class VehicleFragment extends Fragment {
                 builder.setTitle("Add Vehicle");
 
                 final EditText regNo = (EditText)promptsView.findViewById(R.id.reg_number);
-                final EditText vin = (EditText)promptsView.findViewById(R.id.vehicle_vin);
+                //final EditText vin = (EditText)promptsView.findViewById(R.id.vehicle_vin);
                 final EditText model = (EditText)promptsView.findViewById(R.id.vehicle_model);
                 final EditText year = (EditText)promptsView.findViewById(R.id.vehicle_year);
                 tv_message = (TextView) promptsView.findViewById(R.id.vehicle_tv_message);
@@ -129,7 +129,7 @@ public class VehicleFragment extends Fragment {
                     @Override
                     public void onClick(View v) {
                         String v_reg = String.valueOf(regNo.getText());
-                        String v_in = String.valueOf(vin.getText());
+                        String v_in = "1234";//String.valueOf(vin.getText());
                         String v_model = String.valueOf(model.getText());
                         String v_year = String.valueOf(year.getText());
                         if (!v_reg.isEmpty()){

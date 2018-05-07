@@ -53,7 +53,6 @@ public class PaymentFragment extends Fragment {
     WebView mWebView;
     SessionManager session;
     ProgressDialog pd;
-    String user_fname, user_lname,user_title,user_credit,user_mobile;
 
     @BindView(R.id.credit_amount) EditText _credit_amount;
     @BindView(R.id.buy_credit) Button _btn_proceed;
@@ -85,12 +84,7 @@ public class PaymentFragment extends Fragment {
 
         // get user data from session
         HashMap<String, String> user = session.getUserDetails();
-
-        user_fname = user.get(SessionManager.user_fname);
-        user_lname = user.get(SessionManager.user_lname);
-        user_title = user.get(SessionManager.user_title);
-        user_credit = user.get(SessionManager.user_credit);
-        user_mobile = user.get(SessionManager.user_mobile);
+        String userId=user.get(SessionManager.user_id);
 
         // Enable Javascript
         WebSettings webSettings = mWebView.getSettings();
@@ -108,16 +102,12 @@ public class PaymentFragment extends Fragment {
                     _btn_proceed.setEnabled(true);
                     return;
                 }else {
-                    String url = "https://www.goev.lk/pay/au.com.gateway.IT/pay-mob.php";
+                    String url = "https://api.goev.lk/pay/au.com.gateway.IT/pay-mob.php";
                     final String credit_amount = _credit_amount.getText().toString();
                     String postData = null;
-                    String fullname = user_fname + " " + user_lname;
                     try {
-                        postData = "mobNo=" + URLEncoder.encode(user_mobile, "UTF-8")
-                                + "&noOfCredit=" + URLEncoder.encode(credit_amount, "UTF-8")
-                                + "&title=" + URLEncoder.encode("", "UTF-8")
-                                + "&FName=" + URLEncoder.encode(fullname, "UTF-8")
-                                + "&credit=" + URLEncoder.encode(user_credit, "UTF-8");
+                        postData = "user_id=" + URLEncoder.encode(userId, "UTF-8")
+                                + "&noOfCredit=" + URLEncoder.encode(credit_amount, "UTF-8");
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                         GoogleAnalyticsService.getInstance().trackException(getActivity().getApplicationContext(), e);
@@ -151,7 +141,6 @@ public class PaymentFragment extends Fragment {
                             dlgAlert.setIcon(R.drawable.logo);
                         }
                     });
-                    mWebView.postUrl(url, postData.getBytes());
 
                     mWebView.setWebChromeClient(new WebChromeClient() {
                         public void onProgressChanged(WebView view, int progress) {
@@ -173,14 +162,9 @@ public class PaymentFragment extends Fragment {
                                     JSONObject responseData = obj.getJSONObject("responseData");
                                     String responseCode = responseData.getString("responseCode");
 
-                                    Calendar c = Calendar.getInstance();
-                                    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                                    String formattedDate = df.format(c.getTime());
-
                                     //process JSON
                                     if (responseCode.equals("00")) {
                                         GoogleAnalyticsService.getInstance().setAction("Payment", "Success", session.getUserID() + "," + credit_amount);
-                                        sendServerRequest(session.getUserID(), credit_amount, formattedDate);
                                     }
                                     else
                                         GoogleAnalyticsService.getInstance().setAction("Payment", "Failed", session.getUserID() + "," + credit_amount);
@@ -191,6 +175,7 @@ public class PaymentFragment extends Fragment {
                             return true;
                         }
                     });
+                    mWebView.postUrl(url, postData.getBytes());
                 }
             }
         });
@@ -252,39 +237,6 @@ public class PaymentFragment extends Fragment {
             _credit_amount.setError(null);
         }
         return valid;
-    }
-
-    private void sendServerRequest(final String userId, final String amount, final String dateTime) {
-        final ProgressDialog pd = ProgressDialog.show(getActivity(), "", "Please Wait...", true);
-        pd.setCancelable(false);
-        _credit_amount.setEnabled(false);
-        _btn_proceed.setEnabled(false);
-        RequestQueue rq = Volley.newRequestQueue(getActivity());
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, ServerConnector.SERVER_ADDRESS+"ev_owners/account/recharge/",
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        if (pd != null && pd.isShowing()) {
-                            pd.dismiss();
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-
-                    }
-                }) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<String, String>();
-                params.put("id", userId);
-                params.put("amount", amount);
-                params.put("date_time", dateTime);
-                return params;
-            }
-        };
-        rq.add(stringRequest);
     }
 }
 

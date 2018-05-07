@@ -9,12 +9,12 @@ android {
         applicationId "com.jlanka.tripplanner"
         minSdkVersion 18
         targetSdkVersion 26
-        versionName 'v1.05'
+        versionName 'v1.06'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
-        versionCode 5
-        versionNameSuffix 'firebase'
+        versionCode 6
+        versionNameSuffix 'Server change'
     }
     buildTypes {
         release {

@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ServerConnector {
     private static ServerConnector serverConnector;
-    public static final String SERVER_ADDRESS = "http://yvk.rxn.mybluehost.me:8001/api/";
+    public static final String SERVER_ADDRESS = "https://api.goev.lk:2083/api/";
     private static RequestQueue mRequestQueue;
     private SessionManager sessionManager;
     private Context context;
@@ -79,7 +79,6 @@ public class ServerConnector {
             public Map<String, String> getHeaders() {
                 Map<String, String>  params = new HashMap<String, String>();
                 if (sessionManager.getToken()!=null) {
-                    System.out.println(sessionManager.getToken());
                     params.put("Authorization", "Token " + sessionManager.getToken());
                 }
                 return params;

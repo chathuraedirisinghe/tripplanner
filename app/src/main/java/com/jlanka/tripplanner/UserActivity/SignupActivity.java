@@ -5,8 +5,11 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.util.Base64;
 import android.util.Log;
 import android.util.Patterns;
 import android.util.TypedValue;
@@ -15,12 +18,14 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +42,7 @@ import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
 import com.facebook.Profile;
 import com.facebook.ProfileTracker;
+import com.facebook.internal.CallbackManagerImpl;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
@@ -60,7 +66,6 @@ import com.jlanka.tripplanner.Server.ServerConnector;
 
 public class SignupActivity extends Activity {
     private static final String TAG = "SignupActivity";
-    private static final int FacebookLoginCode=1;
     private static final int GooogleSignInCode=2;
     private GoogleSignInClient mGoogleSignInClient;
     private CallbackManager callbackManager;
@@ -135,7 +140,6 @@ public class SignupActivity extends Activity {
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
                 _emailText.setText(account.getEmail());
-                _username.setText(account.getDisplayName());
                 _fname.setText(account.getGivenName());
                 _lname.setText(account.getFamilyName());
                 buttonsLayout.setVisibility(View.GONE);
@@ -151,8 +155,7 @@ public class SignupActivity extends Activity {
     }
 
     public void setUpFacebookButton(){
-        facebook_login.setReadPermissions(Arrays.asList(
-                "email","public_profile"));
+        facebook_login.setReadPermissions(Arrays.asList("email","public_profile"));
         callbackManager = CallbackManager.Factory.create();
 
         // Callback registration
@@ -168,14 +171,11 @@ public class SignupActivity extends Activity {
                         new GraphRequest.GraphJSONObjectCallback() {
                             @Override
                             public void onCompleted(JSONObject object,GraphResponse response) {
-
                                 try {
-
                                     if (object.has("email")) {
                                         _emailText.setText(object.getString("email"));
                                     }
                                     if (object.has("first_name")) {
-                                        _username.setText(object.getString("first_name"));
                                         _fname.setText(object.getString("first_name"));
                                     }
                                     if (object.has("last_name")) {
@@ -205,22 +205,14 @@ public class SignupActivity extends Activity {
 
             @Override
             public void onError(FacebookException e) {
-                AlertDialog alertDialog = new AlertDialog.Builder(SignupActivity.this).create();
-                alertDialog.setTitle("Sorry");
-                alertDialog.setMessage(e.toString());
-                alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-                alertDialog.show();
+                Toast.makeText(SignupActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
             }
+
         });
 
         mProfileTracker = new ProfileTracker() {
             @Override
             protected void onCurrentProfileChanged(Profile oldProfile, Profile newProfile) {
-                // Fetch user details from New Profile
             }
         };
     }
@@ -469,14 +461,13 @@ public class SignupActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        System.out.println(requestCode);
         switch (requestCode){
-            case FacebookLoginCode:
-                callbackManager.onActivityResult(requestCode, resultCode, data);
-                break;
             case GooogleSignInCode:
                 Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
                 handleSignInResult(task);
+                break;
+            default:
+                callbackManager.onActivityResult(requestCode, resultCode, data);
                 break;
         }
         super.onActivityResult(requestCode, resultCode, data);

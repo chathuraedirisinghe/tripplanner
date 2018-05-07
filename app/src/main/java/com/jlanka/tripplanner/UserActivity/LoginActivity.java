@@ -51,8 +51,6 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         ButterKnife.bind(this);
-        checkNetwork();
-
         // Session Manager
         session = new SessionManager(this);
 
@@ -162,10 +160,6 @@ public class LoginActivity extends AppCompatActivity {
         new OnResponseListner() {
             @Override
             public void onResponse(String response) {
-
-                if(pd.isShowing()){
-                    pd.dismiss();
-                }
                 try {
                     JSONObject jsonResponse = new JSONObject(response);
                     String status = jsonResponse.getString("status");
@@ -270,24 +264,5 @@ public class LoginActivity extends AppCompatActivity {
 
     public static String getMobilenumber() {
         return mobilenumber;
-    }
-
-    public void checkNetwork(){
-        String ss = NetworkUtil.getConnectivityStatusString(this);
-
-        if(ss.contains("Not connected")){
-            AlertDialog alertDialog = new AlertDialog.Builder(LoginActivity.this).create();
-            alertDialog.setTitle("No Internet");
-            alertDialog.setMessage("Please check your internet Connection & try again...");
-            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Exit",
-                    new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                            finish();
-                            System.exit(0);
-                        }
-                    });
-            alertDialog.show();
-        }
     }
 }

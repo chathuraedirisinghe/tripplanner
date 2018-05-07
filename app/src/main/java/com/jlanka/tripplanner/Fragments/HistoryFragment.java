@@ -10,11 +10,10 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
-
-import com.android.volley.Request;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -26,6 +25,7 @@ import java.util.Date;
 import java.util.HashMap;
 
 import com.jlanka.tripplanner.GoogleAnalyticsService;
+import com.jlanka.tripplanner.Helpers.UIHelper;
 import com.jlanka.tripplanner.R;
 import com.jlanka.tripplanner.Server.OnErrorListner;
 import com.jlanka.tripplanner.Server.OnResponseListner;
@@ -116,62 +116,49 @@ public class HistoryFragment extends Fragment {
             try{
                 for ( i = 0 ; i < jsonResponse.length() ; i++ ){
                     JSONObject history_row = jsonResponse.getJSONObject(i);
-                    String date = history_row.getString("start_datetime").substring(0,10);
+                    String date = history_row.getString("start_datetime");
                     int duration = history_row.getInt("duration");
-                    double cost = history_row.getDouble("cost");
+                    String cost = history_row.getString("cost");
                     String station_id = history_row.getString("charging_station");
 
                     TableRow tr = new TableRow(getActivity());
+                    tr.setDividerDrawable(getResources().getDrawable(R.drawable.sub_divider));
+                    tr.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
                     tr.setLayoutParams(new TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
                     if(i%2==0){
                         tr.setBackgroundColor(Color.rgb(207, 211, 214));
                     }
 
-                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ");
-                    Date startDate = simpleDateFormat.parse(history_row.getString("start_datetime"));
+                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'");
+                    Date startDate = simpleDateFormat.parse(date);
                     SimpleDateFormat dateFormat=new SimpleDateFormat("dd MMM - hh:mm a");
+
 
                     TextView c1 = new TextView(getActivity());
                     c1.setTextSize(10);
+                    c1.setLayoutParams(getActivity().findViewById(R.id.c1).getLayoutParams());
+                    c1.setPadding(10,0,10,0);
                     c1.setText(dateFormat.format(startDate));
 
                     TextView c2 = new TextView(getActivity());
                     c2.setTextSize(12);
-                    c2.setPadding(0,0,5,0);
+                    c2.setLayoutParams(getActivity().findViewById(R.id.c2).getLayoutParams());
+                    c2.setPadding(10,0,10,0);
                     c2.setGravity(Gravity.RIGHT);
-
-                    if (duration > 59) {
-                        int minutes = duration / 60;
-                        int sec = duration % 60;
-                        int hours = minutes / 60;
-
-                        String durationString="";
-
-                        if (hours > 1)
-                            durationString+=hours + " hrs ";
-                        else
-                            durationString+=hours + " hr ";
-
-                        if (minutes>1)
-                            durationString+=minutes+" mins ";
-                        else
-                            durationString+=minutes+" min ";
-
-                        durationString+=sec+" secs";
-
-                        c2.setText(durationString);
-                    } else
-                        c2.setText(duration + " secs");
+                    c2.setText(UIHelper.getInstance(getActivity()).getDurationInTimeFormat(duration));
 
                     TextView c3 = new TextView(getActivity());
-                    c3.setText(Math.round(cost)+"    ");
-                    c3.setPadding(0,0,5,0);
+                    c3.setText(cost);
+                    c3.setLayoutParams(getActivity().findViewById(R.id.c3).getLayoutParams());
                     c3.setGravity(Gravity.END);
+                    c3.setPadding(10,0,10,0);
                     c3.setTextSize(12);
 
                     TextView c4 = new TextView(getActivity());
                     c4.setText(station_id);
+                    c4.setPadding(10,0,10,0);
+                    c4.setLayoutParams(getActivity().findViewById(R.id.c4).getLayoutParams());
                     c4.setTextSize(10);
 
                     tr.addView(c1);
@@ -181,7 +168,7 @@ public class HistoryFragment extends Fragment {
                     lastExpensesTable.addView(tr);
                 }
             }catch (JSONException e){
-
+                e.printStackTrace();
             } catch (ParseException e) {
                 e.printStackTrace();
             }

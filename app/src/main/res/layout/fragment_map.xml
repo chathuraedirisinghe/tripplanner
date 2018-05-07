@@ -94,6 +94,17 @@
         app:elevation="5dp"
         app:rippleColor="@color/black" />
 
+    <TextView
+        android:id="@+id/charger_loading_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/colorAccent"
+        android:text="Chargers Loading..."
+        android:textAlignment="center"
+        android:textColor="@android:color/white"
+        android:visibility="visible" />
+
     <include layout="@layout/bottom_dialog" />
 
     <RelativeLayout
@@ -127,17 +138,6 @@
                 android:text="Goto Settings and enable location access permission for this app" />
         </LinearLayout>
     </RelativeLayout>
-
-    <TextView
-        android:id="@+id/charger_loading_message"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:background="@color/colorAccent"
-        android:text="Chargers Loading..."
-        android:textAlignment="center"
-        android:textColor="@android:color/white"
-        android:visibility="gone" />
 
 
 </android.support.design.widget.CoordinatorLayout>

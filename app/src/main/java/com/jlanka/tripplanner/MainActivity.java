@@ -423,7 +423,6 @@ public class MainActivity extends AppCompatActivity
                         }
                         catch (Exception e){
                             pb.setVisibility(View.INVISIBLE);
-                            System.out.println(e.getMessage());
                         }
 
                     }
@@ -432,7 +431,6 @@ public class MainActivity extends AppCompatActivity
                     @Override
                     public void onError(String error, JSONObject obj) {
                         pb.setVisibility(View.INVISIBLE);
-                        System.out.println(error+obj);
                     }
                 },
                 "GetUserCredit"

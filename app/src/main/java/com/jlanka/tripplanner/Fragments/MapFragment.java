@@ -16,6 +16,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Vibrator;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomSheetBehavior;
@@ -31,6 +32,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -164,54 +166,37 @@ public class MapFragment extends Fragment implements
     ProgressDialog progressDialog;
     public static String charging_marker;
 
-    @BindView(R.id.btnLL)
-    LinearLayout btn_layout;
-    @BindView(R.id.stop)
-    LinearLayout stop_layout;
-    @BindView(R.id.charger_id)
-    TextView _charger_id;
-    @BindView(R.id.charger_availability)
-    TextView _charger_availability;
-    @BindView(R.id.charger_type)
-    TextView _charger_type;
-    @BindView(R.id.charging_station_name)
-    TextView _charging_station;
-    @BindView(R.id.charge_now_btn)
-    Button _chargenow_btn;
-    @BindView(R.id.get_direction)
-    Button _get_direction;
-    @BindView(R.id.stop_now_btn)
-    Button _stop_charge;
-    @BindView(R.id.charger_animation)
-    GifImageView _imageView;
+    @BindView(R.id.btnLL)LinearLayout btn_layout;
+    @BindView(R.id.stop)LinearLayout stop_layout;
+    @BindView(R.id.details_progress_layout) LinearLayout details_progress_layout;
+    @BindView(R.id.details_layout) LinearLayout details_layout;
+    @BindView(R.id.soc_perc)ProgressBar soc_perc;
+    @BindView(R.id.soc_val)TextView soc_val;
+    @BindView(R.id.till_80)TextView till_80;
+    @BindView(R.id.till_100)TextView till_100;
+    @BindView(R.id.units)TextView units;
+    @BindView(R.id.tot_price)TextView tot_price;
 
-    //------------------------Thiwanka-----------------------------
-    @BindView(R.id.permissionLayout)
-    RelativeLayout permissionLayout;
-    @BindView(R.id.charger_icon)
-    ImageView _charger_icon;
-    @BindView(R.id.progress_Bar_Layout)
-    RelativeLayout progressBar;
-    @BindView(R.id.textView)
-    TextView progress_bar_text;
-    @BindString(R.string.google_maps_key)
-    String MAP_API_KEY;
-    @BindView(R.id.fabLegend)
-    FloatingActionButton fabLegend;
-    @BindView(R.id.fabRoute)
-    FloatingActionButton fabRoute;
-    @BindView(R.id.fabNav)
-    FloatingActionButton fabNav;
-    @BindView(R.id.fabEnd)
-    FloatingActionButton fabEnd;
-    @BindView(R.id.floating_search_view)
-    FloatingSearchView fsv;
-    @BindView(R.id.info_button)
-    ImageButton info_button;
-    @BindView(R.id.charger_loading_message)
-    TextView chargerLoadingMessage;
-    @BindView(R.id.bd_refresh)
-    ImageButton refreshButton;
+    @BindView(R.id.charger_id)TextView _charger_id;
+    @BindView(R.id.charger_availability)TextView _charger_availability;
+    @BindView(R.id.charger_type) TextView _charger_type;
+    @BindView(R.id.charging_station_name) TextView _charging_station;
+    @BindView(R.id.charge_now_btn) Button _chargenow_btn;
+    @BindView(R.id.get_direction) Button _get_direction;
+    @BindView(R.id.stop_now_btn) Button _stop_charge;
+    @BindView(R.id.permissionLayout) RelativeLayout permissionLayout;
+    @BindView(R.id.charger_icon) ImageView _charger_icon;
+    @BindView(R.id.progress_Bar_Layout) RelativeLayout progressBar;
+    @BindView(R.id.textView) TextView progress_bar_text;
+    @BindString(R.string.google_maps_key) String MAP_API_KEY;
+    @BindView(R.id.fabLegend) FloatingActionButton fabLegend;
+    @BindView(R.id.fabRoute) FloatingActionButton fabRoute;
+    @BindView(R.id.fabNav) FloatingActionButton fabNav;
+    @BindView(R.id.fabEnd) FloatingActionButton fabEnd;
+    @BindView(R.id.floating_search_view) FloatingSearchView fsv;
+    @BindView(R.id.info_button) ImageButton info_button;
+    @BindView(R.id.charger_loading_message) TextView chargerLoadingMessage;
+    @BindView(R.id.bd_refresh) ImageButton refreshButton;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -237,27 +222,19 @@ public class MapFragment extends Fragment implements
                     case BottomSheetBehavior.STATE_SETTLING:
                         break;
                     case BottomSheetBehavior.STATE_EXPANDED:
+                        setMargins(1.0f);
                         break;
                     case BottomSheetBehavior.STATE_COLLAPSED:
+                        setMargins(0.0f);
                         break;
                     case BottomSheetBehavior.STATE_HIDDEN:
-
                         break;
                 }
             }
 
             @Override
             public void onSlide(@NonNull View bottomSheet, float slideOffset) {
-
-                UIHelper helper = UIHelper.getInstance(getActivity());
-                int messageMargin = helper.getMarginInDp((int) Math.round(180 * slideOffset));
-                int bottomMargin = helper.getMarginInDp((int) Math.round(180 * slideOffset) + 10);
-                int endBottomMargin = helper.getMarginInDp((int) Math.round(180 * slideOffset) + 70);
-
-                helper.setMargins(chargerLoadingMessage, 0, 0, 0, messageMargin);
-                helper.setMargins(fabRoute, 0, 0, 8, bottomMargin);
-                helper.setMargins(fabNav, 0, 0, 8, bottomMargin);
-                helper.setMargins(fabEnd, 0, 0, 8, endBottomMargin);
+                setMargins(slideOffset);
             }
         });
 
@@ -319,6 +296,21 @@ public class MapFragment extends Fragment implements
         mMapView.onCreate(savedInstanceState);
         mMapView.getMapAsync(this);
         return mView;
+    }
+
+    private void setMargins(float slideOffset){
+        UIHelper helper = UIHelper.getInstance(getActivity());
+
+        int max =  helper.pxToDp(bottomSheet.getHeight())-20;
+
+        int messageMargin = helper.getMarginInDp((int) Math.round(max * slideOffset));
+        int bottomMargin = helper.getMarginInDp((int) Math.round(max * slideOffset) + 10);
+        int endBottomMargin = helper.getMarginInDp((int) Math.round(max * slideOffset) + 70);
+
+        helper.setMargins(chargerLoadingMessage, 0, 0, 0, messageMargin);
+        helper.setMargins(fabRoute, 0, 0, 8, bottomMargin);
+        helper.setMargins(fabNav, 0, 0, 8, bottomMargin);
+        helper.setMargins(fabEnd, 0, 0, 8, endBottomMargin);
     }
 
     private void requestRoute() {
@@ -385,6 +377,7 @@ public class MapFragment extends Fragment implements
         selectedMarker = marker.getTitle();
         zoomToLocation(marker.getPosition(), 15, 0);
         if (chargingStation != null && isCharging && marker != chargingStation) {
+            setCharging();
             onMarkerClick(chargingStation);
             return true;
         }
@@ -411,10 +404,19 @@ public class MapFragment extends Fragment implements
                 if (mLastLocation != null) {
                     Location.distanceBetween(marker.getPosition().latitude, marker.getPosition().longitude,
                             mLastLocation.getLatitude(), mLastLocation.getLongitude(), distance);
-                    if (distance[0] > 100)
-                        notifyOnError("You need to be within 100m of the charging station");
-                    else
+//                    if (distance[0] > 200)
+//                        notifyOnError("You need to be within 200m of the charging station");
+//                    else {
+                        _chargenow_btn.setEnabled(false);
+                        Handler h = new Handler();
+                        h.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                _chargenow_btn.setEnabled(true);
+                            }
+                        },2000);
                         chargeNow(_charger_id.getTag().toString());
+//                    }
                 } else {
                     notifyOnError("Unable to retrieve current location");
                     getCurrentLocation(true);
@@ -479,7 +481,7 @@ public class MapFragment extends Fragment implements
             @Override
             public void onMapClick(LatLng point) {
                 if (!isCharging)
-                    collapseBottomSheet();
+                    behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
                 else
                     return;
             }
@@ -630,7 +632,7 @@ public class MapFragment extends Fragment implements
         });
 
         if (behavior.getState() == BottomSheetBehavior.STATE_COLLAPSED) {
-            expandBottomSheet();
+            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
         }
 
         _get_direction.setOnClickListener(new View.OnClickListener() {
@@ -647,6 +649,14 @@ public class MapFragment extends Fragment implements
         _stop_charge.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                _stop_charge.setEnabled(false);
+                Handler h = new Handler();
+                h.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        _stop_charge.setEnabled(true);
+                    }
+                },2000);
                 stopCharge(c.getDevice_id());
             }
         });
@@ -719,10 +729,10 @@ public class MapFragment extends Fragment implements
 
         _chargenow_btn.setEnabled(true);
         _chargenow_btn.setAlpha(1f);
-        _imageView.setVisibility(View.GONE);
         _charging_station.setVisibility(View.GONE);
         btn_layout.setVisibility(View.VISIBLE);
         stop_layout.setVisibility(View.GONE);
+        setMargins(0.0f);
     }
 
     private void notifyOnError(String s) {
@@ -753,9 +763,10 @@ public class MapFragment extends Fragment implements
             progressDialog.dismiss();
         }
 
-        expandBottomSheet();
         btn_layout.setVisibility(View.GONE);
         stop_layout.setVisibility(View.VISIBLE);
+        behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+        setMargins(1.0f);
     }
 
     public void chargeNow(String selectedMarker) {
@@ -764,14 +775,14 @@ public class MapFragment extends Fragment implements
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 if (!scd.getSelectedVID().equals("")) {
+                    Vibrator vibrator = (Vibrator) getActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                    vibrator.vibrate(1000);
                     showProgress("Charger Initialising");
-                    //startCharging(selectedMarker, scd.getSelectedVID());
 
                     Map<String, String> params = new HashMap<>();
                     // the POST parameters:
                     params.put("charging_station_id", selectedMarker);
                     params.put("electric_vehicle_id", scd.getSelectedVID());
-
 
                     ServerConnector.getInstance(getActivity()).cancelRequest("Initialise_Charger");
                     ServerConnector.getInstance(getActivity()).sendRequest(ServerConnector.SERVER_ADDRESS + "charging_stations/init_charge/", params, Request.Method.POST,
@@ -805,7 +816,7 @@ public class MapFragment extends Fragment implements
                                 }
                             }, "Initialise_Charger");
                 } else {
-                    collapseBottomSheet();
+                    behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
                     Toast.makeText(getActivity(), "No vehicles found, please add a vehicle !", Toast.LENGTH_LONG).show();
                 }
             }
@@ -1097,7 +1108,7 @@ public class MapFragment extends Fragment implements
 
     private void addDestinationMarker(LatLng location, String name) {
         routed = true;
-        collapseBottomSheet();
+        behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
         destinationSet = true;
         destinatonMarker = mGoogleMap.addMarker(new MarkerOptions()
                 .title("Destination")
@@ -1525,32 +1536,6 @@ public class MapFragment extends Fragment implements
         startActivity(intent);
     }
 
-    private void expandBottomSheet() {
-        behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-        UIHelper helper = UIHelper.getInstance(getActivity());
-        int leftMargin = helper.getMarginInDp(8);
-        int bottomMargin = helper.getMarginInDp(180);
-        int endBottomMargin = helper.getMarginInDp(250);
-
-        helper.setMargins(fabRoute, 0, 0, leftMargin, bottomMargin);
-        helper.setMargins(fabNav, 0, 0, leftMargin, bottomMargin);
-        helper.setMargins(fabEnd, 0, 0, leftMargin, endBottomMargin);
-    }
-
-    private void collapseBottomSheet() {
-        behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-
-        UIHelper helper = UIHelper.getInstance(getActivity());
-        int val8 = helper.getMarginInDp(8);
-        int val10 = helper.getMarginInDp(10);
-
-        int val70 = helper.getMarginInDp(70);
-
-        helper.setMargins(fabRoute, 0, 0, val8, val10);
-        helper.setMargins(fabNav, 0, 0, val8, val10);
-        helper.setMargins(fabEnd, 0, 0, val8, val70);
-    }
-
     private void trackError(Exception e) {
         GoogleAnalyticsService.getInstance().trackException(getActivity(), e);
     }
@@ -1558,7 +1543,6 @@ public class MapFragment extends Fragment implements
     private void generateReceipt(String charging_session_id, String charger_id) {
         rd = new ReceiptDialog();
         if (!rd.isAdded() && !rd.isVisible()) {
-            System.out.println("ahgsdjafajhakfjila--------------------");
             rd.init(Integer.parseInt(charging_session_id), chargingStations.get(charger_id), session.getVehicles(), new OnErrorListner() {
                 @RequiresApi(api = Build.VERSION_CODES.M)
                 @Override
@@ -1575,7 +1559,7 @@ public class MapFragment extends Fragment implements
     public void onResume() {
         super.onResume();
         mMapView.onResume();
-        collapseBottomSheet();
+        behavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
         if (checkLocationPermission()) {
             if (mGoogleMap != null) {
                 mGoogleMap.setMyLocationEnabled(true);
@@ -1592,6 +1576,52 @@ public class MapFragment extends Fragment implements
         }
     }
 
+    private void addSessionDetailsListener(String sessionId){
+        DatabaseReference database = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference sessionRef = database.child("charging_session_details").child(sessionId);
+        sessionRef.addValueEventListener(new ValueEventListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            @SuppressLint("MissingPermission")
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                try {
+                    if (dataSnapshot.getValue() != null) {
+                        JSONObject obj = new JSONObject(dataSnapshot.getValue().toString());
+                        switch (obj.getString("status")){
+                            case "Charging":
+                                details_progress_layout.setVisibility(View.GONE);
+
+                                soc_perc.setProgress(Integer.parseInt(obj.getString("soc")));
+                                soc_val.setText(obj.getString("soc"));
+                                till_80.setText(UIHelper.getInstance(getActivity()).getDurationInTimeFormat(obj.getInt("remaining_time_80")));
+                                till_100.setText(UIHelper.getInstance(getActivity()).getDurationInTimeFormat(obj.getInt("remaining_time_100")));
+                                units.setText(obj.getString("units"));
+                                tot_price.setText(obj.getString("current_fee"));
+
+                                details_layout.setVisibility(View.VISIBLE);
+                                setMargins(1);
+                            break;
+                            case "Done":
+                                sessionRef.removeValue();
+                                details_progress_layout.setVisibility(View.VISIBLE);
+                                details_layout.setVisibility(View.GONE);
+                                setMargins(1);
+                            break;
+                        }
+                    }
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
     private void addSessionListener() {
         PlugInDialog pid = new PlugInDialog();
         DatabaseReference database = FirebaseDatabase.getInstance().getReference();
@@ -1606,7 +1636,7 @@ public class MapFragment extends Fragment implements
                     pid.dismiss();
 
                 hideProgress();
-                ;
+                System.out.println(dataSnapshot.getValue());
                 if (dataSnapshot.getValue() != null) {
                     try {
                         HashMap<String, JSONObject> vehicles = new HashMap();
@@ -1632,6 +1662,7 @@ public class MapFragment extends Fragment implements
                                 break;
                             case "Charging":
                                 onMarkerClick(markers.get(vehicle.getString("station")));
+                                addSessionDetailsListener(vehicle.getString("session"));
                                 setCharging();
                                 break;
                             case "Done":
@@ -1651,7 +1682,6 @@ public class MapFragment extends Fragment implements
                         }
                     } catch (Exception e) {
                         hideProgress();
-                        System.out.println(e.getMessage());
                     }
                 }
             }

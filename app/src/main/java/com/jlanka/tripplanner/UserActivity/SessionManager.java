@@ -186,7 +186,10 @@ public class SessionManager {
         editor.putString(user_mobile, mob);
     }
 
-    public void setUser_credit(String credit){editor.putString(user_credit, credit);}
+    public void setUser_credit(String credit){
+        editor.putString(user_credit, credit);
+        editor.commit();
+    }
 
     /**
      * Quick check for login

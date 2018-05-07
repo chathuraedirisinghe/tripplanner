@@ -106,7 +106,6 @@ public class ReceiptDialog extends DialogFragment {
                 @RequiresApi(api = Build.VERSION_CODES.M)
                 @Override
                 public void onResponse(String response) {
-                    System.out.println("response"+response);
                     try {
                         if (!response.equals("[]")) {
                             LinearLayout detailsLayout = view.findViewById(R.id.rec_details_layout);
@@ -153,28 +152,7 @@ public class ReceiptDialog extends DialogFragment {
                             rec_stop.setText(timeFormat.format(stopDate));
 
                             int dur = obj.getInt("duration");
-                            if (dur > 59) {
-                                int minutes = dur / 60;
-                                int sec = dur % 60;
-                                int hours = minutes / 60;
-
-                                String durationString="";
-
-                                if (hours > 1)
-                                    durationString+=hours + " hrs ";
-                                else
-                                    durationString+=hours + " hr ";
-
-                                if (minutes>1)
-                                    durationString+=minutes+" mins ";
-                                else
-                                    durationString+=minutes+" min ";
-
-                                durationString+=sec+" secs";
-
-                                rec_dur.setText(durationString);
-                            } else
-                                rec_dur.setText(dur + " secs");
+                            rec_dur.setText(UIHelper.getInstance(getActivity()).getDurationInTimeFormat(dur));
 
                             progressLayout.setVisibility(View.GONE);
                             detailsLayout.setVisibility(View.VISIBLE);
@@ -183,7 +161,6 @@ public class ReceiptDialog extends DialogFragment {
                         }
                     }
                     catch (Exception e) {
-                        System.out.println(e.getMessage());
                     }
                 }
             },

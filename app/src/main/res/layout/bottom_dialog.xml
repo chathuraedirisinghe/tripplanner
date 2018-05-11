@@ -124,7 +124,7 @@
                         android:id="@+id/type"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Charger type : "
+                        android:text="Charger Type : "
                         android:textSize="16sp"
                         android:textStyle="bold" />
 

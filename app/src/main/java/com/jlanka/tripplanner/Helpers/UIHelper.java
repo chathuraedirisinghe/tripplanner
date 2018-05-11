@@ -95,9 +95,8 @@ public class UIHelper {
     public String getDuration(int duration){
         String durationString="";
         if (duration > 59) {
-            int minutes = duration / 60;
-            int sec = duration % 60;
-            int hours = minutes / 60;
+            int minutes = (duration / 60)%60;
+            int hours = (duration / 60)/60;
 
             if (hours > 1)
                 durationString+=hours + " hrs ";
@@ -108,8 +107,6 @@ public class UIHelper {
                 durationString+=minutes+" mins ";
             else
                 durationString+=minutes+" min ";
-
-            durationString+=sec+" secs";
         } else
             durationString=duration + " secs";
 
@@ -119,9 +116,9 @@ public class UIHelper {
     public String getDurationInTimeFormat(int duration){
         String durationString="";
         if (duration > 59) {
-            int minutes = duration / 60;
             int sec = duration % 60;
-            int hours = minutes / 60;
+            int minutes = (duration / 60)%60;
+            int hours = (duration / 60)/60;
 
             durationString+=String.format("%02d", hours) + " : ";
 

@@ -28,6 +28,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -141,7 +142,7 @@ public class MapFragment extends Fragment implements
     private boolean firstLoad = true;
     public static boolean isCharging = false, destinationSet = false;
     private AlertDialog ad;
-
+    ProgressBar app_progress;
 
     String user_mobile, user_pin;
     HashMap<String, String> user, chargingSessions = new HashMap();
@@ -161,10 +162,7 @@ public class MapFragment extends Fragment implements
     private ReceiptDialog rd;
 
     //------------------------------------------------------------------------------------------------------------
-
-    String charger_type, charger_address, charger_available;
     ProgressDialog progressDialog;
-    public static String charging_marker;
 
     @BindView(R.id.btnLL)LinearLayout btn_layout;
     @BindView(R.id.stop)LinearLayout stop_layout;
@@ -195,7 +193,6 @@ public class MapFragment extends Fragment implements
     @BindView(R.id.fabEnd) FloatingActionButton fabEnd;
     @BindView(R.id.floating_search_view) FloatingSearchView fsv;
     @BindView(R.id.info_button) ImageButton info_button;
-    @BindView(R.id.charger_loading_message) TextView chargerLoadingMessage;
     @BindView(R.id.bd_refresh) ImageButton refreshButton;
 
     @Override
@@ -203,8 +200,8 @@ public class MapFragment extends Fragment implements
         super.onCreateView(inflater, container, savedInstanceState);
         mView = inflater.inflate(R.layout.fragment_map, container, false);
         ButterKnife.bind(this, mView);
-
         container = (ViewGroup) getActivity().findViewById(R.id.cordinator_layout);
+        app_progress=getActivity().findViewById(R.id.app_bar_progress);
 
         bottomSheet = mView.findViewById(R.id.design_bottom_sheet);
         behavior = BottomSheetBehavior.from(bottomSheet);
@@ -307,7 +304,6 @@ public class MapFragment extends Fragment implements
         int bottomMargin = helper.getMarginInDp((int) Math.round(max * slideOffset) + 10);
         int endBottomMargin = helper.getMarginInDp((int) Math.round(max * slideOffset) + 70);
 
-        helper.setMargins(chargerLoadingMessage, 0, 0, 0, messageMargin);
         helper.setMargins(fabRoute, 0, 0, 8, bottomMargin);
         helper.setMargins(fabNav, 0, 0, 8, bottomMargin);
         helper.setMargins(fabEnd, 0, 0, 8, endBottomMargin);
@@ -404,9 +400,9 @@ public class MapFragment extends Fragment implements
                 if (mLastLocation != null) {
                     Location.distanceBetween(marker.getPosition().latitude, marker.getPosition().longitude,
                             mLastLocation.getLatitude(), mLastLocation.getLongitude(), distance);
-//                    if (distance[0] > 200)
-//                        notifyOnError("You need to be within 200m of the charging station");
-//                    else {
+                    if (distance[0] > 200)
+                        notifyOnError("You need to be within 200m of the charging station");
+                    else {
                         _chargenow_btn.setEnabled(false);
                         Handler h = new Handler();
                         h.postDelayed(new Runnable() {
@@ -416,7 +412,7 @@ public class MapFragment extends Fragment implements
                             }
                         },2000);
                         chargeNow(_charger_id.getTag().toString());
-//                    }
+                    }
                 } else {
                     notifyOnError("Unable to retrieve current location");
                     getCurrentLocation(true);
@@ -551,7 +547,8 @@ public class MapFragment extends Fragment implements
     }
 
     public void getResponse(final double lat, final double lng) {
-        chargerLoadingMessage.setVisibility(View.VISIBLE);
+
+        app_progress.setVisibility(View.VISIBLE);
         String charging_address = "charging_stations/";
 
         ServerConnector.getInstance(getActivity()).cancelRequest("ChargingStations");
@@ -586,8 +583,9 @@ public class MapFragment extends Fragment implements
         if (markers == null)
             markers = new HashMap<>();
 
-        if (chargersToDraw.size() < 1)
-            chargerLoadingMessage.setVisibility(View.GONE);
+        if (chargersToDraw.size() < 1) {
+            app_progress.setVisibility(View.GONE);
+        }
 
         for (String key : chargersToDraw.keySet()) {        //loop 5-6 - constant time
             Charger c = chargersToDraw.get(key);
@@ -708,7 +706,7 @@ public class MapFragment extends Fragment implements
 
                 if (m != null) {
                     m.setIcon(BitmapDescriptorFactory.fromBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(c.getType(), c.getState())));
-                    chargerLoadingMessage.setVisibility(View.GONE);
+                    app_progress.setVisibility(View.GONE);
 
                     if (selectedMarker != null && selectedMarker.equals(c.getDevice_id())) {
                         _charger_availability.setText(" " + c.getState());
@@ -1593,8 +1591,8 @@ public class MapFragment extends Fragment implements
 
                                 soc_perc.setProgress(Integer.parseInt(obj.getString("soc")));
                                 soc_val.setText(obj.getString("soc"));
-                                till_80.setText(UIHelper.getInstance(getActivity()).getDurationInTimeFormat(obj.getInt("remaining_time_80")));
-                                till_100.setText(UIHelper.getInstance(getActivity()).getDurationInTimeFormat(obj.getInt("remaining_time_100")));
+                                till_80.setText(UIHelper.getInstance(getActivity()).getDuration(obj.getInt("remaining_time_80")));
+                                till_100.setText(UIHelper.getInstance(getActivity()).getDuration(obj.getInt("remaining_time_100")));
                                 units.setText(obj.getString("units"));
                                 tot_price.setText(obj.getString("current_fee"));
 

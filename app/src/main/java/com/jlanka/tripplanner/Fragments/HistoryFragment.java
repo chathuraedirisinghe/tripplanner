@@ -130,7 +130,7 @@ public class HistoryFragment extends Fragment {
                         tr.setBackgroundColor(Color.rgb(207, 211, 214));
                     }
 
-                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'");
+                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
                     Date startDate = simpleDateFormat.parse(date);
                     SimpleDateFormat dateFormat=new SimpleDateFormat("dd MMM - hh:mm a");
 

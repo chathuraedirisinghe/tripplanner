@@ -24,6 +24,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -71,37 +72,6 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         Stetho.initializeWithDefaults(this);
         checkLocationPermission();
-
-//        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-//            @Override
-//            public void uncaughtException(Thread t, Throwable e) {
-//                if (isExternalStorageWritable()) {
-//                    File appDirectory = new File(Environment.getExternalStorageDirectory() + "/JL Trip Planner");
-//                    File logDirectory = new File(appDirectory + "/log");
-//                    File logFile = new File(logDirectory, "logcat" + System.currentTimeMillis() + ".txt");
-//                    // create app folder
-//                    if (!appDirectory.exists()) {
-//                        appDirectory.mkdir();
-//                    }
-//                    // create log folder
-//                    if (!logDirectory.exists()) {
-//                        logDirectory.mkdir();
-//                    }
-//                    // clear the previous logcat and then write the new one to the file
-//                    try {
-//                        Process process = Runtime.getRuntime().exec("logcat -c");
-//                        process = Runtime.getRuntime().exec("logcat -f " + logFile + " *:S MyActivity:D MyActivity2:D");
-//                    } catch (IOException ioe) {
-//                        ioe.printStackTrace();
-//                    }
-//
-//                } else if (isExternalStorageReadable()) {
-//                    // only readable
-//                } else {
-//                    // not accessible
-//                }
-//            }
-//        });
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             // only for gingerbread and newer versions
@@ -369,7 +339,6 @@ public class MainActivity extends AppCompatActivity
                 }
                 return;
             }
-
         }
     }
 

@@ -136,13 +136,13 @@ public class ReceiptDialog extends DialogFragment {
                             ch_power.setText(charger.getPower() + " kW");
                             rec_icon.setImageBitmap(UIHelper.getInstance(getActivity()).getMarkerIcon(charger.getType(), charger.getState()));
 
-                            rec_total.setText("Rs."+Math.round(obj.getDouble("cost")));
+                            rec_total.setText("Rs."+obj.getString("cost"));
 
-                            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ");
+                            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
                             Date startDate = simpleDateFormat.parse(obj.getString("start_datetime"));
 
                             SimpleDateFormat dateFormat=new SimpleDateFormat("dd-MM-yyyy");
-                            SimpleDateFormat timeFormat=new SimpleDateFormat("hh:mm:ss");
+                            SimpleDateFormat timeFormat=new SimpleDateFormat("hh:mm:ss a");
 
                             rec_date.setText(dateFormat.format(startDate));
                             rec_start.setText(timeFormat.format(startDate));
@@ -161,6 +161,7 @@ public class ReceiptDialog extends DialogFragment {
                         }
                     }
                     catch (Exception e) {
+                        Toast.makeText(getActivity(), e.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 }
             },

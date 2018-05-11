@@ -291,6 +291,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textColor="@android:color/holo_red_light"
-        android:textSize="10sp"
-        android:text="estimate based on charging from 20% to 80% of battery capacity" />
+        android:textSize="8sp"
+        android:textStyle="italic"
+        android:text="* Estimate based on charging from 20% to 80% of battery capacity" />
 </LinearLayout>

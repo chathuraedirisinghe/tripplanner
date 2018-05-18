@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="@dimen/activity_vertical_margin"
+        tools:context=".Fragments.BluetoothFragment">
+
+
+        <LinearLayout
+            android:id="@+id/top"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <Switch
+                android:id="@+id/switch1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Bluetooth Enable"
+                android:paddingBottom="@dimen/activity_vertical_margin"
+                android:paddingLeft="@dimen/activity_horizontal_margin"
+                android:paddingRight="@dimen/activity_horizontal_margin"
+                android:paddingTop="@dimen/activity_vertical_margin"/>
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Show paired Devices"
+                android:id="@+id/PairedBtn"
+                android:layout_below="@+id/switch1" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Discover New Devices"
+                android:id="@+id/discover"
+                android:layout_below="@+id/PairedBtn" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Export Database"
+                android:id="@+id/exportDatabase"
+                android:layout_below="@+id/discover" />
+
+            <ListView
+                android:id="@+id/devicesListView"
+                android:layout_width="wrap_content"
+                android:layout_height="195dp"
+                android:layout_alignEnd="@+id/off"
+                android:layout_alignRight="@+id/off"
+                android:layout_below="@+id/PairedBtn"
+                android:cacheColorHint="#00000000"
+                android:choiceMode="singleChoice"
+                android:numColumns="3" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/abc"
+            android:layout_below="@+id/top"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="@dimen/activity_vertical_margin"
+            android:paddingLeft="@dimen/activity_horizontal_margin"
+            android:paddingRight="@dimen/activity_horizontal_margin"
+            android:paddingTop="@dimen/activity_vertical_margin">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.1"
+                android:text="Status:"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.9"
+
+                android:text="&lt;Bluetooth Status>"
+                android:id="@+id/bluetoothStatus"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:layout_centerHorizontal="true"
+                android:layout_alignTop="@+id/checkboxLED1" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_below="@+id/abc"
+            android:id="@+id/connectivity"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_marginTop="10dp"
+            android:layout_height="wrap_content"
+            android:paddingBottom="@dimen/activity_vertical_margin"
+            android:paddingLeft="@dimen/activity_horizontal_margin"
+            android:paddingRight="@dimen/activity_horizontal_margin"
+            android:paddingTop="@dimen/activity_vertical_margin">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.1"
+                android:text="RX:"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.9"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="&lt;Read Buffer>"
+                android:id="@+id/readBuffer"
+                android:layout_centerHorizontal="true" />
+
+
+        </LinearLayout>
+
+
+
+    </RelativeLayout>

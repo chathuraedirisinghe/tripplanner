@@ -1,6 +1,5 @@
 package com.jlanka.tripplanner.Fragments;
 
-
 import android.Manifest;
 import android.app.Fragment;
 import android.bluetooth.BluetoothAdapter;
@@ -29,20 +28,26 @@ import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
-import com.jlanka.tripplanner.BluetoothDBHelper.DatabaseHandler;
-import com.jlanka.tripplanner.BluetoothDBHelper.VehicleData;
+import com.jlanka.tripplanner.Database.DatabaseHandler;
+import com.jlanka.tripplanner.Database.Decrypt;
+import com.jlanka.tripplanner.Database.Vehicle;
+import com.jlanka.tripplanner.Database.VehicleData;
 import com.jlanka.tripplanner.MQTT.Constants;
 import com.jlanka.tripplanner.MQTT.PahoMqttClient;
 import com.jlanka.tripplanner.MainActivity;
 import com.jlanka.tripplanner.R;
 import com.jlanka.tripplanner.UserActivity.SessionManager;
 
+import org.apache.commons.codec.binary.Base64;
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -55,35 +60,34 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
 import static android.app.Activity.RESULT_OK;
 
-/**
- * A simple {@link Fragment} subclass.
- */
-
-
 public class BluetoothFragment extends Fragment {
     @BindView(R.id.bluetoothStatus)TextView mBluetoothStatus;
     @BindView(R.id.readBuffer)TextView mReadBuffer;
-    @BindView(R.id.switch1)Switch onOff;
-    @BindView(R.id.discover)Button mDiscoverBtn;
-    @BindView(R.id.exportDatabase)Button mExportData;
-    @BindView(R.id.PairedBtn)Button mListPairedDevicesBtn;
+    @BindView(R.id.vehicle_spinner)Spinner _selectEV;
+    @BindView(R.id.switch1)Switch _bluetoothSwitch;
+//    @BindView(R.id.exportDatabase)Button mExportData;
+    @BindView(R.id.discover)Button _discoverDevices;
     @BindView(R.id.devicesListView)ListView mDevicesListView;
 
     View mView;
     private BluetoothAdapter mBTAdapter;
     private Set<BluetoothDevice> mPairedDevices;
     private ArrayAdapter<String> mBTArrayAdapter;
-
     private final String TAG = MainActivity.class.getSimpleName();
     private Handler mHandler; // Our main handler that will receive callback notifications
     private Handler ui; // Our main handler that will receive callback notifications
@@ -100,17 +104,15 @@ public class BluetoothFragment extends Fragment {
     //User Variables
     SessionManager session;
     String user_name,user_fname, user_lname, user_title, user_mail, user_mobile, user_passwd;
-
     ProgressBar app_progress;
     private MqttAndroidClient client;
-//    private String TAG = "MainActivity";
     private PahoMqttClient pahoMqttClient;
-
+    DatabaseHandler databaseHandler;
+    Vehicle vehicle;
 
     public BluetoothFragment() {
         // Required empty public constructor
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -119,9 +121,13 @@ public class BluetoothFragment extends Fragment {
         mView = inflater.inflate(R.layout.fragment_bluetooth, container, false);
         ButterKnife.bind(this,mView);
 
-        app_progress=getActivity().findViewById(R.id.app_bar_progress);
+        session = new SessionManager(getActivity());
+        HashMap<String, String> user = session.getUserDetails();
 
-        DatabaseHandler databaseHandler=new DatabaseHandler(getActivity());
+        setSpinner(user);
+
+        app_progress=getActivity().findViewById(R.id.app_bar_progress);
+        databaseHandler=new DatabaseHandler(getActivity());
 
         mBTArrayAdapter = new ArrayAdapter<String>(getActivity(),android.R.layout.simple_list_item_1);
         mBTAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -136,9 +142,9 @@ public class BluetoothFragment extends Fragment {
             ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
 
         if(mBTAdapter.isEnabled()) {
-            onOff.setChecked(true);
+            _bluetoothSwitch.setChecked(true);
         }else{
-            onOff.setChecked(false);
+            _bluetoothSwitch.setChecked(false);
         }
 
         mHandler = new Handler(){
@@ -154,19 +160,21 @@ public class BluetoothFragment extends Fragment {
                     }
                     app_progress.setVisibility(View.VISIBLE);
                     mReadBuffer.setText(readMessage);
-                    Log.d("insert", "inserting data");
-                    Log.d("insert Values", unixTime+"    "+readMessage);
-                    mqttPublisher(readMessage,unixTime);
+                    Log.d("Bluetooth Data", "---------->Incoming");
+//                    Log.d("insert Values", unixTime+"    "+readMessage);
+//                    mqttPublisher(readMessage,unixTime);
+                    msgDecrypter(unixTime,readMessage);
 
-                    databaseHandler.save(new VehicleData(unixTime, readMessage));
+//                    databaseHandler.save(new VehicleData(unixTime, readMessage));
                 } else {
                     app_progress.setVisibility(View.GONE);
                 }
 
                 if(msg.what == CONNECTING_STATUS){
-                    if(msg.arg1 == 1)
-                        mBluetoothStatus.setText("Connected to Device: " + (String)(msg.obj));
-                    else
+                    if(msg.arg1 == 1) {
+                        mBluetoothStatus.setText("Connected to Device: " + (String) (msg.obj));
+                        mConnectedThread.write(vehicle.toJSON());
+                    } else
                         mBluetoothStatus.setText("Connection Failed");
                 }
             }
@@ -179,7 +187,7 @@ public class BluetoothFragment extends Fragment {
             Toast.makeText(getActivity(),"Bluetooth device not found!",Toast.LENGTH_SHORT).show();
         }
         else {
-            onOff.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            _bluetoothSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     if(isChecked){
@@ -190,40 +198,106 @@ public class BluetoothFragment extends Fragment {
                 }
             });
 
-            mListPairedDevicesBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v){
-                    listPairedDevices(v);
-                }
-            });
 
-            mDiscoverBtn.setOnClickListener(new View.OnClickListener(){
+            _discoverDevices.setOnClickListener(new View.OnClickListener(){
                 @Override
                 public void onClick(View v){
                     discover(v);
                 }
             });
+
+            //            mListPairedDevicesBtn.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v){
+//                    listPairedDevices(v);
+//                }
+//            });
         }
 
-        mExportData.setOnClickListener(new View.OnClickListener() {
+        _selectEV.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onClick(View v) {
-                exportDb();
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                vehicle = (Vehicle) parent.getSelectedItem();
+//                System.out.println("Vehicle Object : : : : "+vehicle.toJSON());
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
             }
         });
 
-
+//        mExportData.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                exportDb();
+//            }
+//        });
         return mView;
+    }
+
+    private void setSpinner(HashMap<String, String> user) {
+        ArrayList<Vehicle> vehicleList = new ArrayList<>();
+        try{
+            JSONArray obj = new JSONArray(user.get(SessionManager.electric_vehicles));
+            for (int i = 0; i < obj.length(); i++){
+                JSONObject vehicle_object = obj.getJSONObject(i);
+                final String model = vehicle_object.getString("model");
+                final String reg_no = vehicle_object.getString("reg_no");
+                final String vin = vehicle_object.getString("vin");
+                vehicleList.add(new Vehicle(vin, reg_no,model));
+            }
+        }catch (JSONException e) {
+            e.printStackTrace();
+        }
+        ArrayAdapter<Vehicle> adapter = new ArrayAdapter<Vehicle>(getActivity(), android.R.layout.simple_spinner_item, vehicleList);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        adapter.notifyDataSetChanged();
+        _selectEV.setAdapter(adapter);
+    }
+
+    private void msgDecrypter(long unixTime, String readMessage) {
+        String message  = decrypt(readMessage);
+        JSONObject evData = null;
+        try {
+            evData = new JSONObject(message);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("EV DATA : "+evData);
+        if (evData != null) {
+            //STATIC DATA
+            if(evData.has("VIN")){
+                try {
+                    System.out.println("Static Data : VIN -> "+evData.get("VIN"));
+                    System.out.println("Static Data : Chip ID -> "+evData.get("Chip_ID"));
+                    System.out.println("Static Data : QC_Count ->"+evData.get("QC_Count"));
+                    System.out.println("Static Data : SC_Count ->"+evData.get("SC_Count"));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            //REALTIME DATA
+            }else{
+
+            }
+        }
     }
 
     private void mqttPublisher(String readMessage, long timestamp) {
         String Message = null;
         try {
             JSONObject DATA = new JSONObject(readMessage);
-            String SOC = DATA.getString("SOC");
             JSONObject message =new JSONObject();
             message.put("timestamp",timestamp);
-            message.put("soc", SOC);
+
+            JSONArray keys = DATA.names ();
+            for (int i = 0; i < keys.length(); ++i) {
+                String key = keys.getString(i); // Here's your key
+                String value = DATA.getString(key); // Here's your value
+                System.out.println("EV DATA : " + key+"    "+value);
+                message.put(key,value);
+            }
+            databaseHandler.addData(new VehicleData(timestamp, message.toString()));
             pahoMqttClient.publishMessage(client, message.toString(), 1, Constants.PUBLISH_TOPIC);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -260,7 +334,6 @@ public class BluetoothFragment extends Fragment {
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
             mBluetoothStatus.setText("Bluetooth enabled");
             Toast.makeText(getActivity(),"Bluetooth turned on",Toast.LENGTH_SHORT).show();
-
         }
         else{
             mBluetoothStatus.setText("Bluetooth enabled");
@@ -290,11 +363,12 @@ public class BluetoothFragment extends Fragment {
         }
     }
 
-    private void discover(View view){
+    private void discover(View v){
         // Check if the device is already discovering
         if(mBTAdapter.isDiscovering()){
             mBTAdapter.cancelDiscovery();
-            Toast.makeText(getActivity(),"Discovery stopped",Toast.LENGTH_SHORT).show();
+            mBTAdapter.startDiscovery();
+            Toast.makeText(getActivity(),"Discovery Restarted",Toast.LENGTH_SHORT).show();
         }
         else{
             if(mBTAdapter.isEnabled()) {
@@ -350,8 +424,9 @@ public class BluetoothFragment extends Fragment {
             if(BluetoothDevice.ACTION_FOUND.equals(action)){
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 // add the name to the list
-                mBTArrayAdapter.add(device.getName() + "\n" + device.getAddress());
-                mBTArrayAdapter.notifyDataSetChanged();
+                System.out.println("DEVICE :::::::::::::::: "+device.getName()+"   "+device.getName().length());
+                    mBTArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+                    mBTArrayAdapter.notifyDataSetChanged();
             }
         }
     };
@@ -392,25 +467,32 @@ public class BluetoothFragment extends Fragment {
                     BluetoothDevice device = mBTAdapter.getRemoteDevice(address);
 
                     try {
-                        mBTSocket = createBluetoothSocket(device);
+                        String decryptedName = decrypt(device.getName());
+                        if((decryptedName.length() == 16)){
+                            mBTSocket = createBluetoothSocket(device);
+                        }else{
+                            fail = true;
+                        }
+                        try {
+                            mBTSocket.connect();
+                        } catch (IOException e) {
+                            try {
+                                fail = true;
+                                mBTSocket.close();
+                                mHandler.obtainMessage(CONNECTING_STATUS, -1, -1)
+                                        .sendToTarget();
+                            } catch (IOException e2) {
+                                //insert code to deal with this
+                                Toast.makeText(getActivity(), "Socket creation failed", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
                     } catch (IOException e) {
                         fail = true;
                         Toast.makeText(getActivity(), "Socket creation failed", Toast.LENGTH_SHORT).show();
                     }
                     // Establish the Bluetooth socket connection.
-                    try {
-                        mBTSocket.connect();
-                    } catch (IOException e) {
-                        try {
-                            fail = true;
-                            mBTSocket.close();
-                            mHandler.obtainMessage(CONNECTING_STATUS, -1, -1)
-                                    .sendToTarget();
-                        } catch (IOException e2) {
-                            //insert code to deal with this
-                            Toast.makeText(getActivity(), "Socket creation failed", Toast.LENGTH_SHORT).show();
-                        }
-                    }
+
                     if(!fail) {
                         mConnectedThread = new ConnectedThread(mBTSocket);
                         mConnectedThread.start();
@@ -494,4 +576,33 @@ public class BluetoothFragment extends Fragment {
         }
     }
 
+    private String decrypt(String name) {
+        String key = "emobilityjlpande";
+        SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes(), "AES");
+        byte[] decode = base64ToByteArray(name);
+
+        Log.w("Encrypted Device : ",name);
+        Log.w("Device to Byte Array : " ,Arrays.toString(decode));
+
+        try {
+            Cipher cipher2 = Cipher.getInstance("AES/ECB/NoPadding","BC");
+            cipher2.init(Cipher.DECRYPT_MODE, skeySpec);
+            String de = new String(cipher2.doFinal(decode), "UTF-8");
+            Log.w("Decrypted Device : ",de);
+            return de;
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
+        return null;
+    }
+
+    public static byte[] base64ToByteArray(String text){
+        byte[] decodedString = new byte[0];
+        try {
+            decodedString = Base64.decodeBase64(text.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return decodedString;
+    }
 }

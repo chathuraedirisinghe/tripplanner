@@ -123,4 +123,15 @@
 
     <string name="facebook_app_id">1871999209526244</string>
     <string name="fb_login_protocol_scheme">fb1871999209526244</string>
+
+
+    <string-array name="data_array">
+        <item>SOC</item>
+        <item>Gids</item>
+        <item>KWh</item>
+        <item>KW1</item>
+        <item>PackV</item>
+        <item>PackAmp</item>
+        <item>KW</item>
+    </string-array>
 </resources>

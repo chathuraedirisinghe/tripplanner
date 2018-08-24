@@ -3,7 +3,6 @@ package com.jlanka.tripplanner;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,10 +12,9 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Settings;
 import android.support.annotation.RequiresApi;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.view.View;
-import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -24,35 +22,32 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.Window;
+import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.android.volley.Request;
-
-import org.eclipse.paho.android.service.MqttService;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-
-import cat.ereza.customactivityoncrash.config.CaocConfig;
-
 import com.facebook.stetho.Stetho;
+import com.jlanka.tripplanner.Fragments.BluetoothFragment;
+import com.jlanka.tripplanner.Fragments.EvStatFragment;
 import com.jlanka.tripplanner.Fragments.HistoryFragment;
 import com.jlanka.tripplanner.Fragments.MapFragment;
 import com.jlanka.tripplanner.Fragments.PaymentFragment;
 import com.jlanka.tripplanner.Fragments.ProfileFragment;
 import com.jlanka.tripplanner.Fragments.SettingsFragment;
 import com.jlanka.tripplanner.Fragments.VehicleFragment;
-
 import com.jlanka.tripplanner.Server.OnErrorListner;
 import com.jlanka.tripplanner.Server.OnResponseListner;
 import com.jlanka.tripplanner.Server.ServerConnector;
 import com.jlanka.tripplanner.UserActivity.LoginActivity;
 import com.jlanka.tripplanner.UserActivity.SessionManager;
+
+import org.eclipse.paho.android.service.MqttService;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+
+import cat.ereza.customactivityoncrash.config.CaocConfig;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -200,6 +195,10 @@ public class MainActivity extends AppCompatActivity
             fragmentManager.beginTransaction().replace(R.id.content_frame, new ProfileFragment()).addToBackStack(ProfileFragment.class.getName()).commit();
         } else if (id == R.id.nav_settings) {
             fragmentManager.beginTransaction().replace(R.id.content_frame, new SettingsFragment()).addToBackStack(SettingsFragment.class.getName()).commit();
+        } else if (id == R.id.nav_bluetooth) {
+            fragmentManager.beginTransaction().replace(R.id.content_frame, new BluetoothFragment()).addToBackStack(BluetoothFragment.class.getName()).commit();
+        } else if (id == R.id.nav_evstat) {
+            fragmentManager.beginTransaction().replace(R.id.content_frame, new EvStatFragment()).addToBackStack(EvStatFragment.class.getName()).commit();
         } else if (id == R.id.nav_logout) {
             ServerConnector.getInstance(getApplicationContext()).cancelRequest("Logout");
             ServerConnector.getInstance(getApplicationContext()).getRequest(ServerConnector.SERVER_ADDRESS+"ev_owners/logout/",

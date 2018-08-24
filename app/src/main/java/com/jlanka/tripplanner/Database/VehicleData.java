@@ -1,4 +1,4 @@
-package com.jlanka.tripplanner.BluetoothDBHelper;
+package com.jlanka.tripplanner.Database;
 
 public class VehicleData {
     private int id;

@@ -66,6 +66,8 @@ import java.util.HashMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -109,6 +111,9 @@ public class BluetoothFragment extends Fragment {
     private PahoMqttClient pahoMqttClient;
     DatabaseHandler databaseHandler;
     Vehicle vehicle;
+
+    String key = "emobilityjlpande";
+    SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes(), "AES");
 
     public BluetoothFragment() {
         // Required empty public constructor
@@ -154,18 +159,19 @@ public class BluetoothFragment extends Fragment {
                     long unixTime = System.currentTimeMillis() / 1000L;
 //                    String currentDateTimeString = DateFormat.getDateTimeInstance().format(new Date());
                     try {
-                        readMessage = new String((byte[]) msg.obj, "ASCII");
+                        readMessage = new String((byte[]) msg.obj, "UTF-8");
+
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
                     app_progress.setVisibility(View.VISIBLE);
-                    mReadBuffer.setText(readMessage);
+//                    mReadBuffer.setText(readMessage);
                     Log.d("Bluetooth Data", "---------->Incoming");
 //                    Log.d("insert Values", unixTime+"    "+readMessage);
 //                    mqttPublisher(readMessage,unixTime);
                     msgDecrypter(unixTime,readMessage);
 
-//                    databaseHandler.save(new VehicleData(unixTime, readMessage));
+//                    databaseHandler.addData(new VehicleData(unixTime, readMessage));
                 } else {
                     app_progress.setVisibility(View.GONE);
                 }
@@ -256,31 +262,57 @@ public class BluetoothFragment extends Fragment {
     }
 
     private void msgDecrypter(long unixTime, String readMessage) {
-        String message  = decrypt(readMessage);
-        JSONObject evData = null;
-        try {
-            evData = new JSONObject(message);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
 
-        System.out.println("EV DATA : "+evData);
-        if (evData != null) {
-            //STATIC DATA
-            if(evData.has("VIN")){
-                try {
-                    System.out.println("Static Data : VIN -> "+evData.get("VIN"));
-                    System.out.println("Static Data : Chip ID -> "+evData.get("Chip_ID"));
-                    System.out.println("Static Data : QC_Count ->"+evData.get("QC_Count"));
-                    System.out.println("Static Data : SC_Count ->"+evData.get("SC_Count"));
-                } catch (JSONException e) {
-                    e.printStackTrace();
+//        String message  = decryptData(readMessage);
+        String message  = readMessage.replaceAll("[^!-~\\u20000-\\uFE1F\\uFF00-\\uFFEF]", "");
+//        Log.d(TAG, "msgDecrypter() returned: " + message);
+
+        String [] a =message.split("[}]");
+        for (String str : a) {
+            String block = str + '}';
+            JSONObject evData = null;
+            try {
+                evData = new JSONObject(block);
+                Log.d(TAG, "msgDecrypter: JSON " + evData);
+                if(evData.has("SOC")){
+                    databaseHandler.addData(new VehicleData(unixTime, evData.toString()));
+                    try {
+                        System.out.println("Static Data : SOC -> "+evData.get("SOC"));
+                        System.out.println("Static Data : Gids -> "+evData.get("Gids"));
+                        System.out.println("Static Data : TotalKWh ->"+evData.get("TotalKWh"));
+                        System.out.println("Static Data : AvlbKW ->"+evData.get("AvlbKW"));
+                        System.out.println("Static Data : PackV ->"+evData.get("PackV"));
+                        System.out.println("Static Data : PackAmp ->"+evData.get("PackAmp"));
+                        System.out.println("Static Data : KW ->"+evData.get("KW"));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }else if(evData.has("Chip_ID")){
+                    try{
+                        System.out.println("CHIP ID ::: -> "+evData.get("Chip_ID"));
+                    }catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                 }
-            //REALTIME DATA
-            }else{
+            } catch (JSONException e) {
 
             }
         }
+    }
+
+    private String decryptData(String data){
+        System.out.println("DATA Length 64 : "+data.length());
+        byte[] decode = base64ToByteArray(data);
+        try {
+            Cipher cipher2 = Cipher.getInstance("AES/ECB/NoPadding","BC");
+            cipher2.init(Cipher.DECRYPT_MODE, skeySpec);
+            String de = new String(cipher2.doFinal(decode), "UTF-8");
+            Log.w("Decrypted  Data : ",de);
+            return de;
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
+        return null;
     }
 
     private void mqttPublisher(String readMessage, long timestamp) {
@@ -342,7 +374,8 @@ public class BluetoothFragment extends Fragment {
     }
 
     private void bluetoothOff(){
-        mBTAdapter.disable(); // turn off
+        mBTAdapter.disable();
+        mConnectedThread.cancel();// turn off
         mBluetoothStatus.setText("Bluetooth disabled");
         Toast.makeText(getActivity(),"Bluetooth turned Off", Toast.LENGTH_SHORT).show();
     }
@@ -424,7 +457,7 @@ public class BluetoothFragment extends Fragment {
             if(BluetoothDevice.ACTION_FOUND.equals(action)){
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 // add the name to the list
-                System.out.println("DEVICE :::::::::::::::: "+device.getName()+"   "+device.getName().length());
+                System.out.println("DEVICE ::::: "+device.getName()+"   "+device.getName().length());
                     mBTArrayAdapter.add(device.getName() + "\n" + device.getAddress());
                     mBTArrayAdapter.notifyDataSetChanged();
             }
@@ -463,12 +496,10 @@ public class BluetoothFragment extends Fragment {
             {
                 public void run() {
                     boolean fail = false;
-
                     BluetoothDevice device = mBTAdapter.getRemoteDevice(address);
-
                     try {
                         String decryptedName = decrypt(device.getName());
-                        if((decryptedName.length() == 16)){
+                        if((decryptedName.contains("EM"))){
                             mBTSocket = createBluetoothSocket(device);
                         }else{
                             fail = true;
@@ -577,8 +608,6 @@ public class BluetoothFragment extends Fragment {
     }
 
     private String decrypt(String name) {
-        String key = "emobilityjlpande";
-        SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes(), "AES");
         byte[] decode = base64ToByteArray(name);
 
         Log.w("Encrypted Device : ",name);
@@ -598,11 +627,11 @@ public class BluetoothFragment extends Fragment {
 
     public static byte[] base64ToByteArray(String text){
         byte[] decodedString = new byte[0];
-        try {
-            decodedString = Base64.decodeBase64(text.getBytes("UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
+            try {
+                decodedString = Base64.decodeBase64(text.getBytes("UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
         return decodedString;
     }
 }

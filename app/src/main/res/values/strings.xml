@@ -128,8 +128,8 @@
     <string-array name="data_array">
         <item>SOC</item>
         <item>Gids</item>
-        <item>KWh</item>
-        <item>KW1</item>
+        <item>TotalKWh</item>
+        <item>AvlbKW</item>
         <item>PackV</item>
         <item>PackAmp</item>
         <item>KW</item>
